@@ -4,7 +4,6 @@
 import logging
 import re
 import requests
-import six
 from caldav.lib.python_utilities import to_wire
 from lxml import etree
 
@@ -12,10 +11,7 @@ from caldav.lib import error
 from caldav.lib.url import URL
 from caldav.objects import Principal
 
-if six.PY3:
-    from urllib.parse import unquote
-else:
-    from urlparse import unquote
+from urllib.parse import unquote
 
 log = logging.getLogger('caldav')
 

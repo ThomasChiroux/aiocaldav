@@ -2,9 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 from lxml import etree
-from six import PY3
 from caldav.lib.namespace import nsmap
-from caldav.lib.python_utilities import to_unicode
 
 
 class BaseElement(object):
@@ -16,7 +14,6 @@ class BaseElement(object):
     def __init__(self, name=None, value=None):
         self.children = []
         self.attributes = {}
-        value = to_unicode(value)
         self.value = None
         if name is not None:
             self.attributes['name'] = name
@@ -29,9 +26,7 @@ class BaseElement(object):
     def __str__(self):
         utf8 = etree.tostring(self.xmlelement(), encoding="utf-8",
                               xml_declaration=True, pretty_print=True)
-        if PY3:
-            return str(utf8, 'utf-8')
-        return utf8
+        return str(utf8, 'utf-8')
 
     def xmlelement(self):
         root = etree.Element(self.tag, nsmap=nsmap)

@@ -12,15 +12,11 @@ import re
 import datetime
 from lxml import etree
 
-try:
-    from urllib.parse import unquote
-except ImportError:
-    from urllib import unquote
+from urllib.parse import unquote
 
 from caldav.lib import error, vcal
 from caldav.lib.url import URL
 from caldav.elements import dav, cdav
-from caldav.lib.python_utilities import to_unicode
 
 
 def errmsg(r):
@@ -151,7 +147,7 @@ class DAVObject(object):
             raise error.NotFoundError(errmsg(ret))
         if ((expected_return_value is not None and
              ret.status != expected_return_value) or
-            ret.status >= 400):
+                ret.status >= 400):
             raise error.exception_by_method[query_method](errmsg(ret))
         return ret
 
@@ -168,7 +164,7 @@ class DAVObject(object):
             status = r.find('.//' + dav.Status.tag)
             if (' 200 ' not in status.text and
                 ' 207 ' not in status.text and
-                ' 404 ' not in status.text):
+                    ' 404 ' not in status.text):
                 raise error.ReportError(errmsg(response))
                 # TODO: may be wrong error class
             href = unquote(r.find('.//' + dav.Href.tag).text)
@@ -333,6 +329,7 @@ class Principal(DAVObject):
     Additionally, a principal MUST report the DAV:principal XML element
     in the value of the DAV:resourcetype property.
     """
+
     def __init__(self, client=None, url=None):
         """
         Returns a Principal.
@@ -388,7 +385,7 @@ class Principal(DAVObject):
             return
         sanitized_url = URL.objectify(url)
         if (sanitized_url.hostname and
-            sanitized_url.hostname != self.client.url.hostname):
+                sanitized_url.hostname != self.client.url.hostname):
             # icloud (and others?) having a load balanced system,
             # where each principal resides on one named host
             self.client.url = sanitized_url
@@ -407,6 +404,7 @@ class Calendar(DAVObject):
     The `Calendar` object is used to represent a calendar collection.
     Refer to the RFC for details: http://www.ietf.org/rfc/rfc4791.txt
     """
+
     def _create(self, name, id=None, supported_calendar_component_set=None):
         """
         Create a new calendar with display name `name` in `parent`.
@@ -613,8 +611,10 @@ class Calendar(DAVObject):
         if not include_completed:
             vnotcompleted = cdav.TextMatch('COMPLETED', negate=True)
             vnotcancelled = cdav.TextMatch('CANCELLED', negate=True)
-            vstatusNotCompleted = cdav.PropFilter('STATUS') + vnotcompleted + cdav.NotDefined()
-            vstatusNotCancelled = cdav.PropFilter('STATUS') + vnotcancelled + cdav.NotDefined()
+            vstatusNotCompleted = cdav.PropFilter(
+                'STATUS') + vnotcompleted + cdav.NotDefined()
+            vstatusNotCancelled = cdav.PropFilter(
+                'STATUS') + vnotcancelled + cdav.NotDefined()
             vnocompletedate = cdav.PropFilter('COMPLETED') + cdav.NotDefined()
             vtodo = (cdav.CompFilter("VTODO") + vnocompletedate +
                      vstatusNotCompleted + vstatusNotCancelled)
@@ -891,7 +891,7 @@ class CalendarObjectResource(DAVObject):
             self._instance = data
         else:
             self._data = vcal.fix(data)
-            self._instance = vobject.readOne(to_unicode(self._data))
+            self._instance = vobject.readOne(self._data)
         return self
 
     def _get_data(self):
@@ -929,6 +929,7 @@ class FreeBusy(CalendarObjectResource):
     The `FreeBusy` object is used to represent a freebusy response from the
     server.
     """
+
     def __init__(self, parent, data):
         """
         A freebusy response object has no URL or ID (TODO: reconsider the
@@ -944,6 +945,7 @@ class Todo(CalendarObjectResource):
     """
     The `Todo` object is used to represent a todo item (VTODO).
     """
+
     def complete(self, completion_timestamp=None):
         """
         Marks the task as completed.
