@@ -3,15 +3,16 @@
 
 import logging
 import re
-import requests
-from caldav.lib.python_utilities import to_wire
+from urllib.parse import unquote
+
+import aiohttp
 from lxml import etree
 
 from caldav.lib import error
+from caldav.lib.python_utilities import to_wire
 from caldav.lib.url import URL
 from caldav.objects import Principal
 
-from urllib.parse import unquote
 
 log = logging.getLogger('caldav')
 
@@ -29,10 +30,17 @@ class DAVResponse:
     headers = {}
     status = 0
 
-    def __init__(self, response):
-        self.raw = response.content
+    def __init__(self):
+        self.raw = None
+        self.headers = None
+        self.status = None
+        self.reason = None
+
+    async def load(self, response):
+        """Asynchronously read the response content."""
+        self.raw = await response.read()
         self.headers = response.headers
-        self.status = response.status_code
+        self.status = response.status
         self.reason = response.reason
         log.debug("response headers: " + str(self.headers))
         log.debug("response status: " + str(self.status))
@@ -40,13 +48,13 @@ class DAVResponse:
 
         try:
             self.tree = etree.XML(self.raw)
-        except:
+        except etree.Error:
             self.tree = None
 
 
 class DAVClient:
     """
-    Basic client for webdav, uses the requests lib; gives access to
+    Basic client for webdav, uses the aiohttp lib; gives access to
     low-level operations towards the caldav server.
 
     Unless you have special needs, you should probably care most about
@@ -56,15 +64,15 @@ class DAVClient:
     url = None
 
     def __init__(self, url, proxy=None, username=None, password=None,
-                 auth=None, ssl_verify_cert=True):
+                 auth=None, ssl_verify_cert=None):
         """
         Sets up a HTTPConnection object towards the server in the url.
         Parameters:
          * url: A fully qualified url: `scheme://user:pass@hostname:port`
          * proxy: A string defining a proxy server: `hostname:port`
          * username and password should be passed as arguments or in the URL
-         * auth and ssl_verify_cert is passed to requests.request.
-         ** ssl_verify_cert can be the path of a CA-bundle or False.
+         * auth and ssl_verify_cert is passed to aiohttp.request.
+         ** ssl_verify_cert can be None (default verify) or False or a ssl.SSLContext
         """
 
         log.debug("url: " + str(url))
@@ -73,7 +81,7 @@ class DAVClient:
         # Prepare proxy info
         if proxy is not None:
             self.proxy = proxy
-            # requests library expects the proxy url to have a scheme
+            # library expects the proxy url to have a scheme
             if re.match('^.*://', proxy) is None:
                 self.proxy = self.url.scheme + '://' + proxy
 
@@ -113,7 +121,7 @@ class DAVClient:
         """
         return Principal(self)
 
-    def propfind(self, url=None, props="", depth=0):
+    async def propfind(self, url=None, props="", depth=0):
         """
         Send a propfind request.
 
@@ -125,10 +133,10 @@ class DAVClient:
         Returns
          * DAVResponse
         """
-        return self.request(url or self.url, "PROPFIND", props,
-                            {'Depth': str(depth)})
+        return await self.request(url or self.url, "PROPFIND", props,
+                                  {'Depth': str(depth)})
 
-    def proppatch(self, url, body, dummy=None):
+    async def proppatch(self, url, body, dummy=None):
         """
         Send a proppatch request.
 
@@ -140,9 +148,9 @@ class DAVClient:
         Returns
          * DAVResponse
         """
-        return self.request(url, "PROPPATCH", body)
+        return await self.request(url, "PROPPATCH", body)
 
-    def report(self, url, query="", depth=0):
+    async def report(self, url, query="", depth=0):
         """
         Send a report request.
 
@@ -154,11 +162,11 @@ class DAVClient:
         Returns
          * DAVResponse
         """
-        return self.request(url, "REPORT", query,
-                            {'Depth': str(depth), "Content-Type":
-                             "application/xml; charset=\"utf-8\""})
+        return await self.request(url, "REPORT", query,
+                                  {'Depth': str(depth), "Content-Type":
+                                   "application/xml; charset=\"utf-8\""})
 
-    def mkcol(self, url, body, dummy=None):
+    async def mkcol(self, url, body, dummy=None):
         """
         Send a mkcol request.
 
@@ -170,9 +178,9 @@ class DAVClient:
         Returns
          * DAVResponse
         """
-        return self.request(url, "MKCOL", body)
+        return await self.request(url, "MKCOL", body)
 
-    def mkcalendar(self, url, body="", dummy=None):
+    async def mkcalendar(self, url, body="", dummy=None):
         """
         Send a mkcalendar request.
 
@@ -184,21 +192,21 @@ class DAVClient:
         Returns
          * DAVResponse
         """
-        return self.request(url, "MKCALENDAR", body)
+        return await self.request(url, "MKCALENDAR", body)
 
-    def put(self, url, body, headers={}):
+    async def put(self, url, body, headers={}):
         """
         Send a put request.
         """
-        return self.request(url, "PUT", body, headers)
+        return await self.request(url, "PUT", body, headers)
 
-    def delete(self, url):
+    async def delete(self, url):
         """
         Send a delete request.
         """
-        return self.request(url, "DELETE")
+        return await self.request(url, "DELETE")
 
-    def request(self, url, method="GET", body="", headers={}):
+    async def request(self, url, method="GET", body="", headers={}):
         """
         Actually sends the request
         """
@@ -206,10 +214,10 @@ class DAVClient:
         # objectify the url
         url = URL.objectify(url)
 
-        proxies = None
+        proxy = None
         if self.proxy is not None:
-            proxies = {url.scheme: self.proxy}
-            log.debug("using proxy - %s" % (proxies))
+            proxy = self.proxy
+            log.debug("using proxy - %s", proxy)
 
         # ensure that url is a unicode string
         url = str(url)
@@ -223,27 +231,31 @@ class DAVClient:
             "sending request - method={0}, url={1}, headers={2}\nbody:\n{3}"
             .format(method, url, combined_headers, body))
         auth = None
-        if self.auth is None and self.username is not None:
-            auth = requests.auth.HTTPDigestAuth(self.username, self.password)
-        else:
-            auth = self.auth
+        # digest auth is not (yet) supported by aiohttp, so skip it for now
+        # if self.auth is None and self.username is not None:
+        #     auth = aiohttp.HTTPDigestAuth(self.username, self.password)
+        # else:
+        #     auth = self.auth
 
-        r = requests.request(method, url, data=to_wire(body),
-                             headers=combined_headers, proxies=proxies,
-                             auth=auth, verify=self.ssl_verify_cert)
-        response = DAVResponse(r)
+        # r = await aiohttp.request(
+        #     method, url, data=to_wire(body),
+        #     headers=combined_headers, proxy=proxy,
+        #     auth=auth, ssl=self.ssl_verify_cert)
+        # response = DAVResponse()
+        # await response.load(r)
 
         # If server supports BasicAuth and not DigestAuth, let's try again:
-        if response.status == 401 and self.auth is None and auth is not None:
-            auth = requests.auth.HTTPBasicAuth(self.username, self.password)
-            r = requests.request(method, url, data=to_wire(body),
-                                 headers=combined_headers, proxies=proxies,
-                                 auth=auth, verify=self.ssl_verify_cert)
-            response = DAVResponse(r)
+        # if response.status == 401 and self.auth is None and auth is not None:
+        auth = aiohttp.BasicAuth(self.username, self.password)
+        r = await aiohttp.request(
+            method, url, data=to_wire(body),
+            headers=combined_headers, proxy=proxy,
+            auth=auth, ssl=self.ssl_verify_cert)
+        response = DAVResponse()
+        await response.load(r)
 
         # this is an error condition the application wants to know
-        if response.status == requests.codes.forbidden or \
-                response.status == requests.codes.unauthorized:
+        if response.status in (401, 403):  # forbidden or unauthorized
             ex = error.AuthorizationError()
             ex.url = url
             ex.reason = response.reason

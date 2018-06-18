@@ -65,7 +65,7 @@ class DAVObject(object):
     def canonical_url(self):
         return str(self.url.unauth())
 
-    def children(self, type=None):
+    async def children(self, type=None):
         """
         List children, using a propfind (resourcetype) on the parent object,
         at depth = 1.
@@ -76,7 +76,7 @@ class DAVObject(object):
         properties = {}
 
         props = [dav.ResourceType(), dav.DisplayName()]
-        response = self._query_properties(props, depth)
+        response = await self._query_properties(props, depth)
         properties = self._handle_prop_response(
             response=response, props=props, type=type, what='tag')
 
@@ -98,7 +98,7 @@ class DAVObject(object):
 
         return c
 
-    def _query_properties(self, props=[], depth=0):
+    async def _query_properties(self, props=[], depth=0):
         """
         This is an internal method for doing a propfind query.  It's a
         result of code-refactoring work, attempting to consolidate
@@ -110,10 +110,10 @@ class DAVObject(object):
             prop = dav.Prop() + props
             root = dav.Propfind() + prop
 
-        return self._query(root, depth)
+        return await self._query(root, depth)
 
-    def _query(self, root=None, depth=0, query_method='propfind', url=None,
-               expected_return_value=None):
+    async def _query(self, root=None, depth=0, query_method='propfind', url=None,
+                     expected_return_value=None):
         """
         This is an internal method for doing a query.  It's a
         result of code-refactoring work, attempting to consolidate
@@ -141,7 +141,7 @@ class DAVObject(object):
         if root:
             body = etree.tostring(root.xmlelement(), encoding="utf-8",
                                   xml_declaration=True)
-        ret = getattr(self.client, query_method)(
+        ret = await getattr(self.client, query_method)(
             url, body, depth)
         if ret.status == 404:
             raise error.NotFoundError(errmsg(ret))
@@ -188,7 +188,7 @@ class DAVObject(object):
 
         return properties
 
-    def get_properties(self, props=[], depth=0):
+    async def get_properties(self, props=[], depth=0):
         """
         Get properties (PROPFIND) for this object. Works only for
         properties, that don't have complex types.
@@ -200,7 +200,7 @@ class DAVObject(object):
          * {proptag: value, ...}
         """
         rc = None
-        response = self._query_properties(props, depth)
+        response = await self._query_properties(props, depth)
         properties = self._handle_prop_response(response, props)
         path = unquote(self.url.path)
         exchange_path = path + '/'
@@ -215,7 +215,7 @@ class DAVObject(object):
 
         return rc
 
-    def set_properties(self, props=[]):
+    async def set_properties(self, props=[]):
         """
         Set properties (PROPPATCH) for this object.
 
@@ -228,7 +228,7 @@ class DAVObject(object):
         set = dav.Set() + prop
         root = dav.PropertyUpdate() + set
 
-        r = self._query(root, query_method='proppatch')
+        r = await self._query(root, query_method='proppatch')
 
         statuses = r.tree.findall(".//" + dav.Status.tag)
         for s in statuses:
@@ -237,7 +237,7 @@ class DAVObject(object):
 
         return self
 
-    def save(self):
+    async def save(self):
         """
         Save the object. This is an abstract method, that all classes
         derived .from DAVObject implement.
@@ -247,12 +247,12 @@ class DAVObject(object):
         """
         raise NotImplementedError()
 
-    def delete(self):
+    async def delete(self):
         """
         Delete the object.
         """
         if self.url is not None:
-            r = self.client.delete(self.url)
+            r = await self.client.delete(self.url)
 
             # TODO: find out why we get 404
             if r.status not in (200, 204, 404):
@@ -266,7 +266,7 @@ class DAVObject(object):
 
 
 class CalendarSet(DAVObject):
-    def calendars(self):
+    async def calendars(self):
         """
         List all calendar collections in this set.
 
@@ -275,14 +275,14 @@ class CalendarSet(DAVObject):
         """
         cals = []
 
-        data = self.children(cdav.Calendar.tag)
+        data = await self.children(cdav.Calendar.tag)
         for c_url, c_type, c_name in data:
             cals.append(Calendar(self.client, c_url, parent=self, name=c_name))
 
         return cals
 
-    def make_calendar(self, name=None, cal_id=None,
-                      supported_calendar_component_set=None):
+    async def make_calendar(self, name=None, cal_id=None,
+                            supported_calendar_component_set=None):
         """
         Utility method for creating a new calendar.
 
@@ -297,10 +297,10 @@ class CalendarSet(DAVObject):
         Returns:
          * Calendar(...)-object
         """
-        return Calendar(
+        cal = Calendar(
             self.client, name=name, parent=self, id=cal_id,
-            supported_calendar_component_set=supported_calendar_component_set
-        ).save()
+            supported_calendar_component_set=supported_calendar_component_set)
+        return await cal.save()
 
     def calendar(self, name=None, cal_id=None):
         """
@@ -353,13 +353,13 @@ class Principal(DAVObject):
             self.url = self.client.url.join(
                 URL.objectify(cup['{DAV:}current-user-principal']))
 
-    def make_calendar(self, name=None, cal_id=None,
-                      supported_calendar_component_set=None):
+    async def make_calendar(self, name=None, cal_id=None,
+                            supported_calendar_component_set=None):
         """
         Convenience method, bypasses the self.calendar_home_set object.
         See CalendarSet.make_calendar for details.
         """
-        return self.calendar_home_set.make_calendar(
+        return await self.calendar_home_set.make_calendar(
             name, cal_id,
             supported_calendar_component_set=supported_calendar_component_set)
 
@@ -371,15 +371,15 @@ class Principal(DAVObject):
         return self.calendar_home_set.calendar(name, cal_id)
 
     @property
-    def calendar_home_set(self):
+    async def calendar_home_set(self):
         if not self._calendar_home_set:
-            chs = self.get_properties([cdav.CalendarHomeSet()])
+            chs = await self.get_properties([cdav.CalendarHomeSet()])
             self.calendar_home_set = chs[
                 '{urn:ietf:params:xml:ns:caldav}calendar-home-set']
         return self._calendar_home_set
 
     @calendar_home_set.setter
-    def calendar_home_set(self, url):
+    async def calendar_home_set(self, url):
         if isinstance(url, CalendarSet):
             self._calendar_home_set = url
             return
@@ -392,11 +392,11 @@ class Principal(DAVObject):
         self._calendar_home_set = CalendarSet(
             self.client, self.client.url.join(sanitized_url))
 
-    def calendars(self):
+    async def calendars(self):
         """
         Return the principials calendars
         """
-        return self.calendar_home_set.calendars()
+        return await self.calendar_home_set.calendars()
 
 
 class Calendar(DAVObject):
@@ -405,7 +405,7 @@ class Calendar(DAVObject):
     Refer to the RFC for details: http://www.ietf.org/rfc/rfc4791.txt
     """
 
-    def _create(self, name, id=None, supported_calendar_component_set=None):
+    async def _create(self, name, id=None, supported_calendar_component_set=None):
         """
         Create a new calendar with display name `name` in `parent`.
         """
@@ -440,8 +440,8 @@ class Calendar(DAVObject):
 
         mkcol = cdav.Mkcalendar() + set
 
-        r = self._query(root=mkcol, query_method='mkcalendar', url=path,
-                        expected_return_value=201)
+        r = await self._query(root=mkcol, query_method='mkcalendar', url=path,
+                              expected_return_value=201)
 
         # COMPATIBILITY ISSUE
         # name should already be set, but we've seen caldav servers failing
@@ -449,9 +449,9 @@ class Calendar(DAVObject):
         # (DAViCal, Zimbra, ...).  Better to be explicit.
         if name:
             try:
-                self.set_properties([display_name])
+                await self.set_properties([display_name])
             except:
-                self.delete()
+                await self.delete()
                 raise
 
         # Special hack for Zimbra!  The calendar we've made exists at
@@ -467,12 +467,12 @@ class Calendar(DAVObject):
         # calendar urls and ensure they pass.
         zimbra_url = self.parent.url.join(name)
         try:
-            ret = self.client.request(zimbra_url)
+            ret = await self.client.request(zimbra_url)
             if ret.status == 404:
                 raise error.NotFoundError
             # special hack for radicale.
             # It will happily accept any calendar-URL without returning 404.
-            ret = self.client.request(self.parent.url.join(
+            ret = await self.client.request(self.parent.url.join(
                 'ANYTHINGGOESHEREthisshouldforsurereturn404'))
             if ret.status == 404:
                 # insane server
@@ -481,34 +481,37 @@ class Calendar(DAVObject):
             # sane server
             pass
 
-    def add_event(self, ical):
+    async def add_event(self, ical):
         """
         Add a new event to the calendar, with the given ical.
 
         Parameters:
          * ical - ical object (text)
         """
-        return Event(self.client, data=ical, parent=self).save()
+        evt = Event(self.client, data=ical, parent=self)
+        return await evt.save()
 
-    def add_todo(self, ical):
+    async def add_todo(self, ical):
         """
         Add a new task to the calendar, with the given ical.
 
         Parameters:
          * ical - ical object (text)
         """
-        return Todo(self.client, data=ical, parent=self).save()
+        todo = Todo(self.client, data=ical, parent=self)
+        return await todo.save()
 
-    def add_journal(self, ical):
+    async def add_journal(self, ical):
         """
         Add a new journal entry to the calendar, with the given ical.
 
         Parameters:
          * ical - ical object (text)
         """
-        return Journal(self.client, data=ical, parent=self).save()
+        jnl = Journal(self.client, data=ical, parent=self)
+        return await jnl.save()
 
-    def save(self):
+    async def save(self):
         """
         The save method for a calendar is only used to create it, for now.
         We know we have to create it when we don't have a url.
@@ -517,12 +520,12 @@ class Calendar(DAVObject):
          * self
         """
         if self.url is None:
-            self._create(name=self.name, id=self.id, **self.extra_init_options)
+            await self._create(name=self.name, id=self.id, **self.extra_init_options)
             if not self.url.endswith('/'):
                 self.url = URL.objectify(str(self.url) + '/')
         return self
 
-    def date_search(self, start, end=None, compfilter="VEVENT"):
+    async def date_search(self, start, end=None, compfilter="VEVENT"):
         """
         Search events by date in the calendar. Recurring events are
         expanded if they are occuring during the specified time frame
@@ -560,7 +563,7 @@ class Calendar(DAVObject):
         filter = cdav.Filter() + vcalendar
 
         root = cdav.CalendarQuery() + [prop, filter]
-        response = self._query(root, 1, 'report')
+        response = await self._query(root, 1, 'report')
         results = self._handle_prop_response(
             response=response, props=[cdav.CalendarData()])
         for r in results:
@@ -570,7 +573,7 @@ class Calendar(DAVObject):
 
         return matches
 
-    def freebusy_request(self, start, end):
+    async def freebusy_request(self, start, end):
         """
         Search the calendar, but return only the free/busy information.
 
@@ -583,11 +586,11 @@ class Calendar(DAVObject):
 
         """
         root = cdav.FreeBusyQuery() + [cdav.TimeRange(start, end)]
-        response = self._query(root, 1, 'report')
+        response = await self._query(root, 1, 'report')
         return FreeBusy(self, response.raw)
 
-    def todos(self, sort_keys=('due', 'priority'), include_completed=False,
-              sort_key=None):
+    async def todos(self, sort_keys=('due', 'priority'), include_completed=False,
+                    sort_key=None):
         """
         fetches a list of todo events.
 
@@ -625,7 +628,7 @@ class Calendar(DAVObject):
 
         root = cdav.CalendarQuery() + [prop, filter]
 
-        response = self._query(root, 1, 'report')
+        response = await self._query(root, 1, 'report')
         results = self._handle_prop_response(
             response=response, props=[cdav.CalendarData()])
         for r in results:
@@ -677,13 +680,14 @@ class Calendar(DAVObject):
             if line == 'BEGIN:VFREEBUSY':
                 return FreeBusy
 
-    def event_by_url(self, href, data=None):
+    async def event_by_url(self, href, data=None):
         """
         Returns the event with the given URL
         """
-        return Event(url=href, data=data, parent=self).load()
+        evt = Event(url=href, data=data, parent=self)
+        return await evt.load()
 
-    def object_by_uid(self, uid, comp_filter=None):
+    async def object_by_uid(self, uid, comp_filter=None):
         """
         Get one event from the calendar.
 
@@ -705,7 +709,7 @@ class Calendar(DAVObject):
 
         root = cdav.CalendarQuery() + [prop, filter]
 
-        response = self._query(root, 1, 'report')
+        response = await self._query(root, 1, 'report')
 
         if response.status == 404:
             raise error.NotFoundError(errmsg(response))
@@ -730,15 +734,15 @@ class Calendar(DAVObject):
                 self.client, url=URL.objectify(href), data=data, parent=self)
         raise error.NotFoundError(errmsg(response))
 
-    def todo_by_uid(self, uid):
-        return self.object_by_uid(uid, comp_filter=cdav.CompFilter("VTODO"))
+    async def todo_by_uid(self, uid):
+        return await self.object_by_uid(uid, comp_filter=cdav.CompFilter("VTODO"))
 
-    def event_by_uid(self, uid):
-        return self.object_by_uid(uid, comp_filter=cdav.CompFilter("VEVENT"))
+    async def event_by_uid(self, uid):
+        return await self.object_by_uid(uid, comp_filter=cdav.CompFilter("VEVENT"))
     # alias for backward compatibility
     event = event_by_uid
 
-    def events(self):
+    async def events(self):
         """
         List all events from the calendar.
 
@@ -754,7 +758,7 @@ class Calendar(DAVObject):
         filter = cdav.Filter() + vcalendar
         root = cdav.CalendarQuery() + [prop, filter]
 
-        response = self._query(root, 1, query_method='report')
+        response = await self._query(root, 1, query_method='report')
         results = self._handle_prop_response(
             response, props=[cdav.CalendarData()])
         for r in results:
@@ -764,7 +768,7 @@ class Calendar(DAVObject):
 
         return all
 
-    def journals(self):
+    async def journals(self):
         """
         List all journals from the calendar.
 
@@ -783,7 +787,7 @@ class Calendar(DAVObject):
         filter = cdav.Filter() + vcalendar
         root = cdav.CalendarQuery() + [prop, filter]
 
-        response = self._query(root, 1, query_method='report')
+        response = await self._query(root, 1, query_method='report')
         results = self._handle_prop_response(
             response, props=[cdav.CalendarData()])
         for r in results:
@@ -807,7 +811,7 @@ class CalendarObjectResource(DAVObject):
         CalendarObjectResource has an additional parameter for its constructor:
          * data = "...", vCal data for the event
         """
-        DAVObject.__init__(self, client=client, url=url, parent=parent, id=id)
+        super().__init__(self, client=client, url=url, parent=parent, id=id)
         if data is not None:
             self.data = data
 
@@ -821,17 +825,17 @@ class CalendarObjectResource(DAVObject):
             data=self.data,
             id=self.id if keep_uid else str(uuid.uuid1()))
 
-    def load(self):
+    async def load(self):
         """
         Load the object from the caldav server.
         """
-        r = self.client.request(self.url)
+        r = await self.client.request(self.url)
         if r.status == 404:
             raise error.NotFoundError(errmsg(r))
         self.data = vcal.fix(r.raw)
         return self
 
-    def _create(self, data, id=None, path=None):
+    async def _create(self, data, id=None, path=None):
         if id is None and path is not None and str(path).endswith('.ics'):
             id = re.search('(/|^)([^/]*).ics', str(path)).group(2)
         elif id is None:
@@ -859,8 +863,8 @@ class CalendarObjectResource(DAVObject):
         if path is None:
             path = id + ".ics"
         path = self.parent.url.join(path)
-        r = self.client.put(path, data,
-                            {"Content-Type": 'text/calendar; charset="utf-8"'})
+        r = await self.client.put(path, data,
+                                  {"Content-Type": 'text/calendar; charset="utf-8"'})
 
         if r.status == 302:
             path = [x[1] for x in r.headers if x[0] == 'location'][0]
@@ -870,7 +874,7 @@ class CalendarObjectResource(DAVObject):
         self.url = URL.objectify(path)
         self.id = id
 
-    def save(self):
+    async def save(self):
         """
         Save the object, can be used for creation and update.
 
@@ -879,7 +883,7 @@ class CalendarObjectResource(DAVObject):
         """
         if self._instance is not None:
             path = self.url.path if self.url else None
-            self._create(self._instance.serialize(), self.id, path)
+            await self._create(self._instance.serialize(), self.id, path)
         return self
 
     def __str__(self):
@@ -946,7 +950,7 @@ class Todo(CalendarObjectResource):
     The `Todo` object is used to represent a todo item (VTODO).
     """
 
-    def complete(self, completion_timestamp=None):
+    async def complete(self, completion_timestamp=None):
         """
         Marks the task as completed.
 
@@ -960,4 +964,4 @@ class Todo(CalendarObjectResource):
             self.instance.vtodo.add('status')
         self.instance.vtodo.status.value = 'COMPLETED'
         self.instance.vtodo.add('completed').value = completion_timestamp
-        self.save()
+        await self.save()
