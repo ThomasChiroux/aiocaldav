@@ -110,7 +110,7 @@ class DAVClient:
         self.url = self.url.unauth()
         log.debug("self.url: " + str(url))
 
-    def principal(self):
+    async def principal(self):
         """
         Convenience method, it gives a bit more object-oriented feel to
         write client.principal() than Principal(client).
@@ -119,7 +119,8 @@ class DAVClient:
         higher-level methods for dealing with the principals
         calendars.
         """
-        return Principal(self)
+        principal = Principal(self)
+        return await principal.ainit()
 
     async def propfind(self, url=None, props="", depth=0):
         """
@@ -237,7 +238,8 @@ class DAVClient:
         # else:
         #     auth = self.auth
 
-        # r = await aiohttp.request(
+        # async with aiohttp.ClientSession() as client:
+        # r = await client.request(
         #     method, url, data=to_wire(body),
         #     headers=combined_headers, proxy=proxy,
         #     auth=auth, ssl=self.ssl_verify_cert)
@@ -246,13 +248,19 @@ class DAVClient:
 
         # If server supports BasicAuth and not DigestAuth, let's try again:
         # if response.status == 401 and self.auth is None and auth is not None:
-        auth = aiohttp.BasicAuth(self.username, self.password)
-        r = await aiohttp.request(
-            method, url, data=to_wire(body),
-            headers=combined_headers, proxy=proxy,
-            auth=auth, ssl=self.ssl_verify_cert)
-        response = DAVResponse()
-        await response.load(r)
+        if self.auth is None and self.username is not None:
+            auth = aiohttp.BasicAuth(self.username, self.password)
+        else:
+            auth = self.auth
+        # TODO: Define total timeout in config ?
+        async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=30)) as client:
+            r = await client.request(
+                method, url, data=to_wire(body),
+                headers=combined_headers, proxy=proxy,
+                auth=auth, ssl=self.ssl_verify_cert)
+            response = DAVResponse()
+            await response.load(r)
 
         # this is an error condition the application wants to know
         if response.status in (401, 403):  # forbidden or unauthorized

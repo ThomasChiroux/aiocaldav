@@ -1,0 +1,12 @@
+version: '3'
+services:
+  radicale:
+    container_name: radicale_tests
+    build:
+      context: ./radicale
+    image: radicale_tests:latest
+    ports:
+      - "5232:5232"
+    # read_only: false
+    #volumes:
+    #  - /tmp:/data

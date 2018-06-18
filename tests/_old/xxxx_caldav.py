@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
+from datetime import datetime
 import logging
 import threading
 import time
-import vobject
+from urllib.parse import urlparse
 import uuid
-from datetime import datetime
-from six import PY3
+import vobject
+
+
 from nose.tools import assert_equal, assert_not_equal, assert_raises
 from nose.plugins.skip import SkipTest
 from requests.packages import urllib3
@@ -16,26 +18,25 @@ from .conf import caldav_servers, proxy, proxy_noport
 from .proxy import ProxyHandler, NonThreadingHTTPServer
 
 from caldav.davclient import DAVClient
-from caldav.objects import (Principal, Calendar, Event, DAVObject,
-                            CalendarSet, FreeBusy)
+from caldav.elements import dav, cdav
 from caldav.lib.url import URL
 from caldav.lib import url
 from caldav.lib import error
-from caldav.elements import dav, cdav
-from caldav.lib.python_utilities import to_local, to_str
+from caldav.lib.python_utilities import to_local
+from caldav.objects import (Principal, Calendar, Event, DAVObject,
+                            CalendarSet, FreeBusy)
 
-if PY3:
-    from urllib.parse import urlparse
-else:
-    from urlparse import urlparse
 
 log = logging.getLogger("caldav")
 
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 class NullHandler(logging.Handler):
     def emit(self, record):
         logging.debug(record)
+
 
 log.addHandler(NullHandler())
 
@@ -187,6 +188,7 @@ class RepeatedFunctionalTestsBaseClass(object):
     On Radicale, apparently there is some bug with MKCALENDAR, ref
     https://github.com/Kozea/Radicale/issues/330
     """
+
     def setup(self):
         logging.debug("############## test setup")
 
@@ -588,8 +590,8 @@ class RepeatedFunctionalTestsBaseClass(object):
         c = self.principal.make_calendar(name="Yølp", cal_id=self.testcal_id)
 
         # add event
-        e1 = c.add_event(to_str(
-            ev1.replace("Bastille Day Party", "Bringebærsyltetøyfestival")))
+        e1 = c.add_event(
+            ev1.replace("Bastille Day Party", "Bringebærsyltetøyfestival"))
 
         # c.events() should give a full list of events
         events = c.events()
@@ -828,6 +830,7 @@ class RepeatedFunctionalTestsBaseClass(object):
 # (maybe a custom nose test loader really would be the better option?)
 # -- Tobias Brox <t-caldav@tobixen.no>, 2013-10-10
 
+
 _servernames = set()
 for _caldav_server in caldav_servers:
     # create a unique identifier out of the server domain name
@@ -853,6 +856,7 @@ class TestCalDAV:
     a small unit of code works as expected, without any third party
     dependencies)
     """
+
     def testCalendar(self):
         """
         Principal.calendar() and CalendarSet.calendar() should create
@@ -888,7 +892,7 @@ class TestCalDAV:
         # the relative URL should be appended to the base URL in the client
         calendar1 = Calendar(client, 'someoneelse/calendars/main_calendar')
         calendar2 = Calendar(client,
-            'http://me:hunter2@calendar.example:80/someoneelse/calendars/main_calendar')
+                             'http://me:hunter2@calendar.example:80/someoneelse/calendars/main_calendar')
         assert_equal(calendar1.url, calendar2.url)
 
     def testDefaultClient(self):
@@ -907,7 +911,7 @@ class TestCalDAV:
         # 1) URL.objectify should return a valid URL object almost no matter
         # what's thrown in
         url0 = URL.objectify(None)
-        url0b= URL.objectify("")
+        url0b = URL.objectify("")
         url1 = URL.objectify(long_url)
         url2 = URL.objectify(url1)
         url3 = URL.objectify("/bar")
@@ -936,7 +940,8 @@ class TestCalDAV:
         assert_equal(url7, "http://foo:bar@www.example.com:8080/bar")
         assert_equal(url8, url1)
         assert_equal(url9, url7)
-        assert_equal(urlA, "http://foo:bar@www.example.com:8080/caldav.php/someuser/calendar")
+        assert_equal(
+            urlA, "http://foo:bar@www.example.com:8080/caldav.php/someuser/calendar")
         assert_equal(urlB, url1)
         assert_raises(ValueError, url1.join, "http://www.google.com")
 
@@ -947,16 +952,17 @@ class TestCalDAV:
         url9 = url1.join(URL.objectify(url5))
         urlA = url1.join(URL.objectify("someuser/calendar"))
         urlB = url5.join(URL.objectify(url1))
-        url6b= url6.join(url0)
-        url6c= url6.join(url0b)
-        url6d= url6.join(None)
+        url6b = url6.join(url0)
+        url6c = url6.join(url0b)
+        url6d = url6.join(None)
         for url6alt in (url6b, url6c, url6d):
             assert_equal(url6, url6alt)
         assert_equal(url6, url1)
         assert_equal(url7, "http://foo:bar@www.example.com:8080/bar")
         assert_equal(url8, url1)
         assert_equal(url9, url7)
-        assert_equal(urlA, "http://foo:bar@www.example.com:8080/caldav.php/someuser/calendar")
+        assert_equal(
+            urlA, "http://foo:bar@www.example.com:8080/caldav.php/someuser/calendar")
         assert_equal(urlB, url1)
         assert_raises(ValueError, url1.join, "http://www.google.com")
 

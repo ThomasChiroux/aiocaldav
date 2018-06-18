@@ -5,14 +5,15 @@
 A "DAV object" is anything we get from the caldav server or push into the
 caldav server, notably principal, calendars and calendar events.
 """
-
-import vobject
-import uuid
-import re
+import asyncio
 import datetime
-from lxml import etree
+import re
+import uuid
 
+
+from lxml import etree
 from urllib.parse import unquote
+import vobject
 
 from caldav.lib import error, vcal
 from caldav.lib.url import URL
@@ -24,7 +25,7 @@ def errmsg(r):
     return "%s %s\n\n%s" % (r.status, r.reason, r.raw)
 
 
-class DAVObject(object):
+class DAVObject:
     """
     Base class for all DAV objects.  Can be instantiated by a client
     and an absolute or relative URL, or from the parent object.
@@ -343,15 +344,23 @@ class Principal(DAVObject):
         """
         self.client = client
         self._calendar_home_set = None
+        self._url = url
 
+    async def ainit(self):
+        """Method called after construction in order to asynchronously init the object.
+
+        no args, only asynchronous.
+        """
         # backwards compatibility.
-        if url is not None:
-            self.url = client.url.join(URL.objectify(url))
+        if self._url is not None:
+            self.url = self.client.url.join(URL.objectify(self._url))
         else:
             self.url = self.client.url
-            cup = self.get_properties([dav.CurrentUserPrincipal()])
+            await asyncio.sleep(1)
+            cup = await self.get_properties([dav.CurrentUserPrincipal()])
             self.url = self.client.url.join(
                 URL.objectify(cup['{DAV:}current-user-principal']))
+        return self
 
     async def make_calendar(self, name=None, cal_id=None,
                             supported_calendar_component_set=None):
@@ -359,44 +368,45 @@ class Principal(DAVObject):
         Convenience method, bypasses the self.calendar_home_set object.
         See CalendarSet.make_calendar for details.
         """
-        return await self.calendar_home_set.make_calendar(
+        cal = await self.calendar_home_set()
+        return cal.make_calendar(
             name, cal_id,
             supported_calendar_component_set=supported_calendar_component_set)
 
-    def calendar(self, name=None, cal_id=None):
+    async def calendar(self, name=None, cal_id=None):
         """
         The calendar method will return a calendar object.
         It will not initiate any communication with the server.
         """
-        return self.calendar_home_set.calendar(name, cal_id)
+        cal = await self.calendar_home_set()
+        return cal.calendar(name, cal_id)
 
-    @property
     async def calendar_home_set(self):
         if not self._calendar_home_set:
             chs = await self.get_properties([cdav.CalendarHomeSet()])
-            self.calendar_home_set = chs[
-                '{urn:ietf:params:xml:ns:caldav}calendar-home-set']
+            self._calendar_home_set = self._calendar_home_setter(
+                chs['{urn:ietf:params:xml:ns:caldav}calendar-home-set'])
         return self._calendar_home_set
 
-    @calendar_home_set.setter
-    async def calendar_home_set(self, url):
+    def _calendar_home_setter(self, url):
+        # TODO: Handle when url is None ?
         if isinstance(url, CalendarSet):
-            self._calendar_home_set = url
-            return
+            return url
         sanitized_url = URL.objectify(url)
         if (sanitized_url.hostname and
                 sanitized_url.hostname != self.client.url.hostname):
             # icloud (and others?) having a load balanced system,
             # where each principal resides on one named host
             self.client.url = sanitized_url
-        self._calendar_home_set = CalendarSet(
+        return CalendarSet(
             self.client, self.client.url.join(sanitized_url))
 
     async def calendars(self):
         """
         Return the principials calendars
         """
-        return await self.calendar_home_set.calendars()
+        cal = await self.calendar_home_set()
+        return await cal.calendars()
 
 
 class Calendar(DAVObject):
