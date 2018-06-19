@@ -17,8 +17,16 @@ uri: caldav URI
 backends = {}
 
 # local radicale server
-backends['radicale'] = {"type": "docker",
+backends['radicale'] = {"name": "radicale",
+                        "type": "docker",
                         "location": "tests/backends/radicale",
                         "uri": "http://172.17.0.1:5232/",
                         "login": "toto",
                         "password": "tutu", }
+
+backends['radicale2'] = {"name": "radicale",
+                         "type": "direct",
+                         "location": "tests/backends/radicale",
+                         "uri": "http://172.17.0.1:5232/",
+                         "login": "toto",
+                         "password": "tutu", }

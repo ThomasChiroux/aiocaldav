@@ -146,7 +146,7 @@ filesystem_folder = /data/collections
 #config =
 
 # Set the default logging level to debug
-#debug = False
+debug = True
 
 # Store all environment variables (including those set in the shell)
 #full_environment = False

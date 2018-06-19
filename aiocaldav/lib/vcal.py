@@ -3,7 +3,7 @@
 
 
 import re
-from caldav.lib.python_utilities import to_local
+from aiocaldav.lib.python_utilities import to_local
 
 
 def fix(event):

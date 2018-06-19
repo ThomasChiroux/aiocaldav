@@ -8,10 +8,10 @@ from urllib.parse import unquote
 import aiohttp
 from lxml import etree
 
-from caldav.lib import error
-from caldav.lib.python_utilities import to_wire
-from caldav.lib.url import URL
-from caldav.objects import Principal
+from aiocaldav.lib import error
+from aiocaldav.lib.python_utilities import to_wire
+from aiocaldav.lib.url import URL
+from aiocaldav.objects import Principal
 
 
 log = logging.getLogger('caldav')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-from caldav.lib.namespace import ns
+from aiocaldav.lib.namespace import ns
 from .base import BaseElement, ValuedBaseElement
 
 

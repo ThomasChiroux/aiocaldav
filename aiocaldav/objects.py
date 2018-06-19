@@ -15,9 +15,9 @@ from lxml import etree
 from urllib.parse import unquote
 import vobject
 
-from caldav.lib import error, vcal
-from caldav.lib.url import URL
-from caldav.elements import dav, cdav
+from aiocaldav.lib import error, vcal
+from aiocaldav.lib.url import URL
+from aiocaldav.elements import dav, cdav
 
 
 def errmsg(r):
@@ -315,8 +315,12 @@ class CalendarSet(DAVObject):
         Returns:
          * Calendar(...)-object
         """
-        return Calendar(self.client, name=name, parent=self,
-                        url=self.url.join(cal_id), id=cal_id)
+        cal = Calendar(self.client, name=name, parent=self,
+                       url=self.url.join(cal_id), id=cal_id)
+        # check url for consistency with Calendar.save() method
+        if not cal.url.endswith('/'):
+            cal.url = URL.objectify(str(cal.url) + '/')
+        return cal
 
 
 class Principal(DAVObject):
@@ -369,7 +373,7 @@ class Principal(DAVObject):
         See CalendarSet.make_calendar for details.
         """
         cal = await self.calendar_home_set()
-        return cal.make_calendar(
+        return await cal.make_calendar(
             name, cal_id,
             supported_calendar_component_set=supported_calendar_component_set)
 
@@ -449,7 +453,6 @@ class Calendar(DAVObject):
         set = dav.Set() + prop
 
         mkcol = cdav.Mkcalendar() + set
-
         r = await self._query(root=mkcol, query_method='mkcalendar', url=path,
                               expected_return_value=201)
 
@@ -625,9 +628,11 @@ class Calendar(DAVObject):
             vnotcompleted = cdav.TextMatch('COMPLETED', negate=True)
             vnotcancelled = cdav.TextMatch('CANCELLED', negate=True)
             vstatusNotCompleted = cdav.PropFilter(
-                'STATUS') + vnotcompleted + cdav.NotDefined()
+                'STATUS') + cdav.NotDefined()
+            vstatusNotCompleted = cdav.PropFilter(
+                'STATUS') + vnotcompleted
             vstatusNotCancelled = cdav.PropFilter(
-                'STATUS') + vnotcancelled + cdav.NotDefined()
+                'STATUS') + vnotcancelled
             vnocompletedate = cdav.PropFilter('COMPLETED') + cdav.NotDefined()
             vtodo = (cdav.CompFilter("VTODO") + vnocompletedate +
                      vstatusNotCompleted + vstatusNotCancelled)
@@ -821,7 +826,7 @@ class CalendarObjectResource(DAVObject):
         CalendarObjectResource has an additional parameter for its constructor:
          * data = "...", vCal data for the event
         """
-        super().__init__(self, client=client, url=url, parent=parent, id=id)
+        super().__init__(client=client, url=url, parent=parent, id=id)
         if data is not None:
             self.data = data
 
@@ -951,8 +956,8 @@ class FreeBusy(CalendarObjectResource):
         will fail?).  Raw response can be accessed through self.data,
         instantiated vobject as self.instance.
         """
-        CalendarObjectResource.__init__(self, client=parent.client, url=None,
-                                        data=data, parent=parent, id=None)
+        super().__init__(client=parent.client, url=None,
+                         data=data, parent=parent, id=None)
 
 
 class Todo(CalendarObjectResource):
