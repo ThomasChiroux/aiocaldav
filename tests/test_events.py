@@ -6,7 +6,7 @@ import vobject
 
 from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
-from aiocaldav.objects import Calendar
+from aiocaldav.objects import (Calendar, Event)
 
 from .fixtures import (backend, event1)
 
@@ -134,6 +134,69 @@ async def test_create_event_from_vobject(backend, event1):
 
 
 @pytest.mark.asyncio
+async def test_lookup_event_1(backend, event1):
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = uuid.uuid4().hex
+    password = uuid.uuid4().hex
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    cal_id = uuid.uuid4().hex
+    cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
+    assert cal.url == uri + login + "/" + cal_id + '/'
+    events = await cal.events()
+    assert len(events) == 0
+
+    ev1 = await cal.add_event(event1)
+    assert ev1.url is not None
+
+    ev2 = await cal.event_by_url(ev1.url)
+    ev3 = await cal.event_by_uid(ev1.instance.vevent.uid.valueRepr())
+    assert ev2.instance.vevent.uid == ev1.instance.vevent.uid
+    assert ev3.instance.vevent.uid == ev1.instance.vevent.uid
+    # Knowing the URL of an event, we should be able to get to it
+    # without going through a calendar object
+    ev4 = Event(client=caldav, url=ev1.url)
+    await ev4.load()
+    assert ev4.instance.vevent.uid == ev1.instance.vevent.uid
+
+    with pytest.raises(error.NotFoundError):
+        await cal.event_by_uid("0")
+
+
+@pytest.mark.asyncio
+async def test_delete_event_1(backend, event1):
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = uuid.uuid4().hex
+    password = uuid.uuid4().hex
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    cal_id = uuid.uuid4().hex
+    cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
+    assert cal.url == uri + login + "/" + cal_id + '/'
+    events = await cal.events()
+    assert len(events) == 0
+
+    ev1 = await cal.add_event(event1)
+    assert ev1.url is not None
+
+    await ev1.delete()
+
+    with pytest.raises(error.NotFoundError):
+        await cal.event_by_url(ev1.url)
+
+    with pytest.raises(error.NotFoundError):
+        await cal.event_by_uid(ev1.instance.vevent.uid.valueRepr())
+
+
+@pytest.mark.asyncio
 async def test_create_event_in_journal_only_calendar(backend, event1):
     """This test does not pass with radicale backend: perhaps radicale accepts
     events even when the calendar should not support it ?"""
@@ -177,3 +240,6 @@ async def test_create_event_in_todo_only_calendar(backend, event1):
     else:
         with pytest.raises(error.PutError):
             await cal.add_event(event1)
+
+
+# TODO: add date search tests (see old tests)

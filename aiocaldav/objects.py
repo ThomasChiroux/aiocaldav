@@ -702,6 +702,20 @@ class Calendar(DAVObject):
         evt = Event(url=href, data=data, parent=self)
         return await evt.load()
 
+    async def journal_by_url(self, href, data=None):
+        """
+        Returns the event with the given URL
+        """
+        jnl = Journal(url=href, data=data, parent=self)
+        return await jnl.load()
+
+    async def todo_by_url(self, href, data=None):
+        """
+        Returns the event with the given URL
+        """
+        todo = Todo(url=href, data=data, parent=self)
+        return await todo.load()
+
     async def object_by_uid(self, uid, comp_filter=None):
         """
         Get one event from the calendar.
@@ -748,6 +762,9 @@ class Calendar(DAVObject):
             return self._calendar_comp_class_by_data(data)(
                 self.client, url=URL.objectify(href), data=data, parent=self)
         raise error.NotFoundError(errmsg(response))
+
+    async def journal_by_uid(self, uid):
+        return await self.object_by_uid(uid, comp_filter=cdav.CompFilter("VJOURNAL"))
 
     async def todo_by_uid(self, uid):
         return await self.object_by_uid(uid, comp_filter=cdav.CompFilter("VTODO"))
