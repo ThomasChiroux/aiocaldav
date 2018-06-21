@@ -1,11 +1,44 @@
 """Fixtures for tests."""
 import contextlib
+import glob
+import os
 import subprocess
 import time
 
 import pytest
 
 from .conf import backends
+
+
+def get_one_static_file(filename, full_path=True):
+    """Return content of a static file.
+
+    :param str filename: either full file path and name or only file name
+    :param bool full_path: if True filename is full path, if False, calculates the
+                           path.
+    """
+    if not full_path:
+        static_dir = os.path.join(os.path.dirname(__file__), 'static')
+        filename = os.path.join(static_dir, filename)
+    with open(filename, "r") as fd:
+        content = fd.read()
+    return content
+
+
+def get_static_files_list(filetype="event", ok=True):
+    """return a list of icalendar from static directory.
+
+    :param str filetype: type of files in ['event', 'journal', 'todo']
+    :param bool ok: if True return OK files (should not generate an error)
+                    if False returns NOK files (should generate an error)
+    """
+    if ok:
+        oktype = "ok"
+    else:
+        oktype = "nok"
+    static_dir = os.path.join(os.path.dirname(__file__), 'static')
+    searched_files = os.path.join(static_dir, f"{filetype}_{oktype}*.ics")
+    return sorted(glob.glob(searched_files))
 
 
 @contextlib.contextmanager
@@ -39,141 +72,30 @@ def radicale_direct():
 
 @pytest.fixture(scope="module")
 def backend(request):
-    with radicale_docker() as backend:
+    with radicale_direct() as backend:
         yield backend
 
 
-@pytest.fixture(scope="module", params=[1, 2, 3])
-def event1(request):
-    if request.param == 1:
-        return """BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Example Corp.//CalDAV Client//EN
-BEGIN:VEVENT
-UID:20010712T182145Z-123401@example.com
-DTSTAMP:20060712T182145Z
-DTSTART:20060714T170000Z
-DTEND:20060715T040000Z
-SUMMARY:Bastille Day Party
-END:VEVENT
-END:VCALENDAR
-"""
-    elif request.param == 2:
-        return """BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Example Corp.//CalDAV Client//EN
-BEGIN:VEVENT
-UID:20010712T182145Z-123401@example.com
-DTSTAMP:20070712T182145Z
-DTSTART:20070714T170000Z
-DTEND:20070715T040000Z
-SUMMARY:Bastille Day Party +1year
-END:VEVENT
-END:VCALENDAR
-"""
-    elif request.param == 3:
-        # example from http://www.rfc-editor.org/rfc/rfc5545.txt
-        return """BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Example Corp.//CalDAV Client//EN
-BEGIN:VEVENT
-UID:19970901T130000Z-123403@example.com
-DTSTAMP:19970901T130000Z
-DTSTART;VALUE=DATE:19971102
-SUMMARY:Our Blissful Anniversary
-TRANSP:TRANSPARENT
-CLASS:CONFIDENTIAL
-CATEGORIES:ANNIVERSARY,PERSONAL,SPECIAL OCCASION
-RRULE:FREQ=YEARLY
-END:VEVENT
-END:VCALENDAR"""
+@pytest.fixture(scope="module", params=get_static_files_list('event'))
+def event_fixtures(request):
+    return get_one_static_file(request.param)
 
 
 @pytest.fixture(scope="module")
-def journal1(request):
-    # example from http://www.kanzaki.com/docs/ical/vjournal.html
-    return """
-BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Example Corp.//CalDAV Client//EN
-BEGIN:VJOURNAL
-UID:19970901T130000Z-123405@example.com
-DTSTAMP:19970901T130000Z
-DTSTART;VALUE=DATE:19970317
-SUMMARY:Staff meeting minutes
-DESCRIPTION:1. Staff meeting: Participants include Joe\, Lisa
-  and Bob. Aurora project plans were reviewed. There is currently
-  no budget reserves for this project. Lisa will escalate to
-  management. Next meeting on Tuesday.\n
-END:VJOURNAL
-END:VCALENDAR
-"""
+def event1(request):
+    return get_one_static_file("event_ok_caldav_1.ics", full_path=False)
 
 
-@pytest.fixture(scope="module", params=[1, 2, 3, 4])
-def todo1(request):
-    if request.param == 1:
-        # example from http: // www.rfc-editor.org/rfc/rfc5545.txt
-        return """
-BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Example Corp.//CalDAV Client//EN
-BEGIN:VTODO
-UID:20070313T123432Z-456553@example.com
-DTSTAMP:20070313T123432Z
-DUE;VALUE=DATE:20070501
-SUMMARY:Submit Quebec Income Tax Return for 2006
-CLASS:CONFIDENTIAL
-CATEGORIES:FAMILY,FINANCE
-STATUS:NEEDS-ACTION
-END:VTODO
-END:VCALENDAR"""
-    elif request.param == 2:
-        # example from RFC2445, 4.6.2
-        return """BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Example Corp.//CalDAV Client//EN
-BEGIN:VTODO
-UID:19970901T130000Z-123404@host.com
-DTSTAMP:19970901T130000Z
-DTSTART:19970415T133000Z
-DUE:19970416T045959Z
-SUMMARY:1996 Income Tax Preparation
-CLASS:CONFIDENTIAL
-CATEGORIES:FAMILY,FINANCE
-PRIORITY:2
-STATUS:NEEDS-ACTION
-END:VTODO
-END:VCALENDAR"""
-    elif request.param == 3:
-        return """
-BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Example Corp.//CalDAV Client//EN
-BEGIN:VTODO
-UID:19970901T130000Z-123405@host.com
-DTSTAMP:19970901T130000Z
-DTSTART:19970415T133000Z
-DUE:19970516T045959Z
-SUMMARY:1996 Income Tax Preparation
-CLASS:CONFIDENTIAL
-CATEGORIES:FAMILY,FINANCE
-PRIORITY:1
-STATUS:NEEDS-ACTION
-END:VTODO
-END:VCALENDAR"""
-    elif request.param == 4:
-        return """
-BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Example Corp.//CalDAV Client//EN
-BEGIN:VTODO
-UID:19970901T130000Z-123406@host.com
-DTSTAMP:19970901T130000Z
-SUMMARY:1996 Income Tax Preparation
-CLASS:CONFIDENTIAL
-CATEGORIES:FAMILY,FINANCE
-PRIORITY:1
-STATUS:NEEDS-ACTION
-END:VTODO
-END:VCALENDAR"""
+@pytest.fixture(scope="module")
+def event2(request):
+    return get_one_static_file("event_ok_caldav_2.ics", full_path=False)
+
+
+@pytest.fixture(scope="module", params=get_static_files_list('journal'))
+def journal_fixtures(request):
+    return get_one_static_file(request.param)
+
+
+@pytest.fixture(scope="module", params=get_static_files_list('todo'))
+def todo_fixtures(request):
+    return get_one_static_file(request.param)

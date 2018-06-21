@@ -2,7 +2,12 @@
 # -*- encoding: utf-8 -*-
 
 
-class AuthorizationError(Exception):
+class CaldavError(Exception):
+    """Group all Caldav Exceptions inside this Exception."""
+    pass
+
+
+class AuthorizationError(CaldavError):
     """
     The client encountered an HTTP 403 error and is passing it on
     to the user. The url property will contain the url in question,
@@ -16,35 +21,35 @@ class AuthorizationError(Exception):
             (self.url, self.reason)
 
 
-class PropsetError(Exception):
+class PropsetError(CaldavError):
     pass
 
 
-class PropfindError(Exception):
+class PropfindError(CaldavError):
     pass
 
 
-class ReportError(Exception):
+class ReportError(CaldavError):
     pass
 
 
-class MkcolError(Exception):
+class MkcolError(CaldavError):
     pass
 
 
-class MkcalendarError(Exception):
+class MkcalendarError(CaldavError):
     pass
 
 
-class PutError(Exception):
+class PutError(CaldavError):
     pass
 
 
-class DeleteError(Exception):
+class DeleteError(CaldavError):
     pass
 
 
-class NotFoundError(Exception):
+class NotFoundError(CaldavError):
     pass
 
 

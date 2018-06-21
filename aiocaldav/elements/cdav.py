@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
+from vobject.icalendar import timeToString
+
 from aiocaldav.lib.namespace import ns
 from .base import BaseElement, NamedBaseElement, ValuedBaseElement
 
@@ -52,9 +54,9 @@ class TimeRange(BaseElement):
     def __init__(self, start=None, end=None):
         super(TimeRange, self).__init__()
         if start is not None:
-            self.attributes['start'] = start.strftime("%Y%m%dT%H%M%S%Z")
+            self.attributes['start'] = timeToString(start)
         if end is not None:
-            self.attributes['end'] = end.strftime("%Y%m%dT%H%M%S%Z")
+            self.attributes['end'] = timeToString(end)
 
 
 class NotDefined(BaseElement):
@@ -72,9 +74,9 @@ class Expand(BaseElement):
     def __init__(self, start, end=None):
         super(Expand, self).__init__()
         if start is not None:
-            self.attributes['start'] = start.strftime("%Y%m%dT%H%M%S%Z")
+            self.attributes['start'] = timeToString(start)
         if end is not None:
-            self.attributes['end'] = end.strftime("%Y%m%dT%H%M%S%Z")
+            self.attributes['end'] = timeToString(end)
 
 
 class Comp(NamedBaseElement):

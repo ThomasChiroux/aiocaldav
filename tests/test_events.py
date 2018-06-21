@@ -1,18 +1,20 @@
 """aiocaldav unittests. Test Events."""
+import datetime
 import uuid
 
 import pytest
+import pytz
 import vobject
 
 from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
-from aiocaldav.objects import (Calendar, Event)
+from aiocaldav.objects import (Calendar, Event, FreeBusy)
 
-from .fixtures import (backend, event1)
+from .fixtures import (backend, event_fixtures, event1, event2)
 
 
 @pytest.mark.asyncio
-async def test_create_event_1(backend, event1):
+async def test_create_event_1(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -28,7 +30,7 @@ async def test_create_event_1(backend, event1):
     events = await cal.events()
     assert len(events) == 0
 
-    await  cal.add_event(event1)
+    await cal.add_event(event_fixtures)
 
     # c.events() should give a full list of events
     events = await cal.events()
@@ -42,7 +44,7 @@ async def test_create_event_1(backend, event1):
 
 
 @pytest.mark.asyncio
-async def test_create_event_2(backend, event1):
+async def test_create_event_2(backend, event_fixtures):
     """test with a VEVENT only calendar."""
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
@@ -60,7 +62,7 @@ async def test_create_event_2(backend, event1):
     events = await cal.events()
     assert len(events) == 0
 
-    await  cal.add_event(event1)
+    await cal.add_event(event_fixtures)
 
     # c.events() should give a full list of events
     events = await cal.events()
@@ -74,7 +76,7 @@ async def test_create_event_2(backend, event1):
 
 
 @pytest.mark.asyncio
-async def test_create_delete_calendar_with_event(backend, event1):
+async def test_create_delete_calendar_with_event(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -90,7 +92,7 @@ async def test_create_delete_calendar_with_event(backend, event1):
     events = await cal.events()
     assert len(events) == 0
 
-    await  cal.add_event(event1)
+    await cal.add_event(event_fixtures)
 
     # c.events() should give a full list of events
     events = await cal.events()
@@ -105,7 +107,7 @@ async def test_create_delete_calendar_with_event(backend, event1):
 
 
 @pytest.mark.asyncio
-async def test_create_event_from_vobject(backend, event1):
+async def test_create_event_from_vobject(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -119,8 +121,8 @@ async def test_create_event_from_vobject(backend, event1):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
     # add event from vobject data
-    vevent1 = vobject.readOne(event1)
-    await cal.add_event(vevent1)
+    vevent_fixtures = vobject.readOne(event_fixtures)
+    await cal.add_event(vevent_fixtures)
 
     # c.events() should give a full list of events
     events = await cal.events()
@@ -134,7 +136,7 @@ async def test_create_event_from_vobject(backend, event1):
 
 
 @pytest.mark.asyncio
-async def test_lookup_event_1(backend, event1):
+async def test_lookup_event_1(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -150,7 +152,7 @@ async def test_lookup_event_1(backend, event1):
     events = await cal.events()
     assert len(events) == 0
 
-    ev1 = await cal.add_event(event1)
+    ev1 = await cal.add_event(event_fixtures)
     assert ev1.url is not None
 
     ev2 = await cal.event_by_url(ev1.url)
@@ -168,7 +170,7 @@ async def test_lookup_event_1(backend, event1):
 
 
 @pytest.mark.asyncio
-async def test_delete_event_1(backend, event1):
+async def test_delete_event_1(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -184,7 +186,7 @@ async def test_delete_event_1(backend, event1):
     events = await cal.events()
     assert len(events) == 0
 
-    ev1 = await cal.add_event(event1)
+    ev1 = await cal.add_event(event_fixtures)
     assert ev1.url is not None
 
     await ev1.delete()
@@ -197,7 +199,7 @@ async def test_delete_event_1(backend, event1):
 
 
 @pytest.mark.asyncio
-async def test_create_event_in_journal_only_calendar(backend, event1):
+async def test_create_event_in_journal_only_calendar(backend, event_fixtures):
     """This test does not pass with radicale backend: perhaps radicale accepts
     events even when the calendar should not support it ?"""
     uri = backend.get('uri')
@@ -213,14 +215,14 @@ async def test_create_event_in_journal_only_calendar(backend, event1):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VJOURNAL'])
     if backend.get("name") == "radicale":
-        await cal.add_event(event1)
+        await cal.add_event(event_fixtures)
     else:
         with pytest.raises(error.PutError):
-            await cal.add_event(event1)
+            await cal.add_event(event_fixtures)
 
 
 @pytest.mark.asyncio
-async def test_create_event_in_todo_only_calendar(backend, event1):
+async def test_create_event_in_todo_only_calendar(backend, event_fixtures):
     """This test does not pass with radicale backend: perhaps radicale accepts
     events even when the calendar should not support it ?"""
     uri = backend.get('uri')
@@ -236,10 +238,180 @@ async def test_create_event_in_todo_only_calendar(backend, event1):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
     if backend.get("name") == "radicale":
-        await cal.add_event(event1)
+        await cal.add_event(event_fixtures)
     else:
         with pytest.raises(error.PutError):
-            await cal.add_event(event1)
+            await cal.add_event(event_fixtures)
 
 
-# TODO: add date search tests (see old tests)
+@pytest.mark.asyncio
+async def test_date_search_naive_1(backend, event1, event2):
+    """Test naive date search."""
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = uuid.uuid4().hex
+    password = uuid.uuid4().hex
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    cal_id = uuid.uuid4().hex
+    cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
+    assert cal.url == uri + login + "/" + cal_id + '/'
+    events = await cal.events()
+    assert len(events) == 0
+
+    evt1 = await cal.add_event(event1)
+
+    result = await cal.date_search(datetime.datetime(2006, 7, 13, 17, 00, 00),
+                                   datetime.datetime(2006, 7, 15, 17, 00, 00))
+
+    assert len(result) == 1
+    assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
+
+    # event2 is same UID, but one year ahead.
+    # The timestamp should change.
+    evt1.data = event2
+    await evt1.save()
+
+    result2 = await cal.date_search(datetime.datetime(2006, 7, 13, 17, 00, 00),
+                                    datetime.datetime(2006, 7, 15, 17, 00, 00))
+    assert len(result2) == 0
+
+    result3 = await cal.date_search(datetime.datetime(2007, 7, 13, 17, 00, 00),
+                                    datetime.datetime(2007, 7, 15, 17, 00, 00))
+    assert len(result3) == 1
+
+    # date search without closing date should also find it
+    result4 = await cal.date_search(datetime.datetime(2007, 7, 13, 17, 00, 00))
+    assert len(result4) == 1
+
+
+@pytest.mark.asyncio
+async def test_date_search_tzaware_gmt_1(backend, event1, event2):
+    """Test naive date search."""
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = uuid.uuid4().hex
+    password = uuid.uuid4().hex
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    cal_id = uuid.uuid4().hex
+    cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
+    assert cal.url == uri + login + "/" + cal_id + '/'
+    events = await cal.events()
+    assert len(events) == 0
+
+    evt1 = await cal.add_event(event1)
+
+    result = await cal.date_search(datetime.datetime(2006, 7, 13, 17, 00, 00,
+                                                     tzinfo=datetime.timezone.utc),
+                                   datetime.datetime(2006, 7, 15, 17, 00, 00,
+                                                     tzinfo=datetime.timezone.utc))
+
+    assert len(result) == 1
+    assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
+
+    # event2 is same UID, but one year ahead.
+    # The timestamp should change.
+    evt1.data = event2
+    await evt1.save()
+
+    result2 = await cal.date_search(datetime.datetime(2006, 7, 13, 17, 00, 00,
+                                                      tzinfo=datetime.timezone.utc),
+                                    datetime.datetime(2006, 7, 15, 17, 00, 00,
+                                                      tzinfo=datetime.timezone.utc))
+    assert len(result2) == 0
+
+    result3 = await cal.date_search(datetime.datetime(2007, 7, 13, 17, 00, 00,
+                                                      tzinfo=datetime.timezone.utc),
+                                    datetime.datetime(2007, 7, 15, 17, 00, 00,
+                                                      tzinfo=datetime.timezone.utc))
+    assert len(result3) == 1
+
+    # date search without closing date should also find it
+    result4 = await cal.date_search(datetime.datetime(2007, 7, 13, 17, 00, 00,
+                                                      tzinfo=datetime.timezone.utc))
+    assert len(result4) == 1
+
+
+@pytest.mark.asyncio
+async def test_date_search_tzaware_2(backend, event1):
+    """Test naive date search."""
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = uuid.uuid4().hex
+    password = uuid.uuid4().hex
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    cal_id = uuid.uuid4().hex
+    cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
+    assert cal.url == uri + login + "/" + cal_id + '/'
+    events = await cal.events()
+    assert len(events) == 0
+
+    evt1 = await cal.add_event(event1)
+
+    start = datetime.datetime(2006, 7, 14, 16, 00, 00,
+                              tzinfo=datetime.timezone.utc)
+    start = pytz.timezone(
+        "Europe/Paris").normalize(start.astimezone(pytz.timezone('Europe/Paris')))
+
+    end = datetime.datetime(2006, 7, 14, 18, 00, 00,
+                            tzinfo=datetime.timezone.utc)
+    end = pytz.timezone(
+        "Europe/Paris").normalize(end.astimezone(pytz.timezone('Europe/Paris')))
+    result = await cal.date_search(start, end)
+
+    assert len(result) == 1
+    assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
+
+    start = datetime.datetime(2006, 7, 14, 18, 00, 00,
+                              tzinfo=datetime.timezone.utc)
+    start = pytz.timezone(
+        "Europe/Paris").normalize(start.astimezone(pytz.timezone('Europe/Paris')))
+
+    end = datetime.datetime(2006, 7, 14, 19, 00, 00,
+                            tzinfo=datetime.timezone.utc)
+    end = pytz.timezone(
+        "Europe/Paris").normalize(end.astimezone(pytz.timezone('Europe/Paris')))
+    result = await cal.date_search(start, end)
+
+    assert len(result) == 1
+    # assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
+
+
+@pytest.mark.asyncio
+async def test_free_busy_naive_1(backend, event2):
+    if backend.get("name") == "radicale":
+        # radicale does not support freebusy for now
+        pytest.skip()
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = uuid.uuid4().hex
+    password = uuid.uuid4().hex
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    cal_id = uuid.uuid4().hex
+    cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
+    assert cal.url == uri + login + "/" + cal_id + '/'
+    events = await cal.events()
+    assert len(events) == 0
+
+    evt = await cal.add_event(event2)
+    # Lets try a freebusy request as well
+    freebusy = await cal.freebusy_request(datetime.datetime(2007, 7, 13, 17, 00, 00),
+                                          datetime.datetime(2007, 7, 15, 17, 00, 00))
+    # TODO: assert something more complex on the return object
+    assert isinstance(freebusy, FreeBusy)
+    assert freebusy.instance.vfreebusy

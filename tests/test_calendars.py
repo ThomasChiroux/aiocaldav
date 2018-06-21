@@ -7,7 +7,7 @@ from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
 from aiocaldav.objects import CalendarSet
 
-from .fixtures import (backend, event1)
+from .fixtures import backend
 
 
 @pytest.mark.asyncio

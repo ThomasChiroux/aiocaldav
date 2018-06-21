@@ -14,16 +14,18 @@ RUN apk add --no-cache --virtual=build-dependencies \
   curl \
   git \
   shadow \
-  && pip install radicale==$VERSION passlib[bcrypt] \
-  && apk del --purge build-dependencies \
+  && pip install passlib[bcrypt] \
+  && pip install git+https://github.com/Kozea/Radicale.git \
+  && apk del --purge build-dependencies \ 
   && addgroup -g $GID radicale \
   && adduser -D -s /bin/false -H -u $UID -G radicale radicale \
   && mkdir -p /config /data \
   && chown -R radicale /config /data
 
+
 COPY config /config
 
-HEALTHCHECK --interval=30s --retries=3 CMD curl --fail http://localhost:5232 || exit 1
+# HEALTHCHECK --interval=30s --retries=3 CMD curl --fail http://localhost:5232 || exit 1
 VOLUME /config /data
 EXPOSE 5232
 

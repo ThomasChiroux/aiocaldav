@@ -8,11 +8,11 @@ from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
 from aiocaldav.objects import Calendar
 
-from .fixtures import (backend, todo1)
+from .fixtures import (backend, todo_fixtures)
 
 
 @pytest.mark.asyncio
-async def test_create_todo_with_completed_1(backend, todo1):
+async def test_create_todo_with_completed_1(backend, todo_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -25,7 +25,7 @@ async def test_create_todo_with_completed_1(backend, todo1):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
-    await cal.add_todo(todo1)
+    await cal.add_todo(todo_fixtures)
 
     todos = await cal.todos(include_completed=True)
     assert len(todos) == 1
@@ -37,7 +37,7 @@ async def test_create_todo_with_completed_1(backend, todo1):
 
 
 @pytest.mark.asyncio
-async def test_create_todo_with_completed_2(backend, todo1):
+async def test_create_todo_with_completed_2(backend, todo_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -51,7 +51,7 @@ async def test_create_todo_with_completed_2(backend, todo1):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
 
-    await cal.add_todo(todo1)
+    await cal.add_todo(todo_fixtures)
 
     todos = await cal.todos(include_completed=True)
     assert len(todos) == 1
@@ -63,7 +63,14 @@ async def test_create_todo_with_completed_2(backend, todo1):
 
 
 @pytest.mark.asyncio
-async def test_create_todo_without_completed_1(backend, todo1):
+async def test_create_todo_without_completed_1(backend, todo_fixtures):
+    vtodo = vobject.readOne(todo_fixtures)
+    try:
+        _ = vtodo.vtodo.status
+    except AttributeError:  # no status
+        if backend.get("name") == "radicale":
+            pytest.skip()
+
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -76,9 +83,9 @@ async def test_create_todo_without_completed_1(backend, todo1):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
-    await cal.add_todo(todo1)
+    await cal.add_todo(todo_fixtures)
 
-    todos = await cal.todos()
+    todos = await cal.todos(include_completed=False)
     assert len(todos) == 1
 
     events = await cal.events()
@@ -88,7 +95,14 @@ async def test_create_todo_without_completed_1(backend, todo1):
 
 
 @pytest.mark.asyncio
-async def test_create_todo_without_completed_2(backend, todo1):
+async def test_create_todo_without_completed_2(backend, todo_fixtures):
+    vtodo = vobject.readOne(todo_fixtures)
+    try:
+        _ = vtodo.vtodo.status
+    except AttributeError:  # no status
+        if backend.get("name") == "radicale":
+            pytest.skip()
+
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -102,9 +116,9 @@ async def test_create_todo_without_completed_2(backend, todo1):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
 
-    await cal.add_todo(todo1)
+    await cal.add_todo(todo_fixtures)
 
-    todos = await cal.todos()
+    todos = await cal.todos(include_completed=False)
     assert len(todos) == 1
 
     events = await cal.events()
@@ -114,7 +128,7 @@ async def test_create_todo_without_completed_2(backend, todo1):
 
 
 @pytest.mark.asyncio
-async def test_create_delete_calendar_with_todo(backend, todo1):
+async def test_create_delete_calendar_with_todo(backend, todo_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -128,9 +142,9 @@ async def test_create_delete_calendar_with_todo(backend, todo1):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
 
-    await cal.add_todo(todo1)
+    await cal.add_todo(todo_fixtures)
 
-    todos = await cal.todos()
+    todos = await cal.todos(include_completed=True)
     assert len(todos) == 1
 
     await cal.delete()
@@ -142,7 +156,7 @@ async def test_create_delete_calendar_with_todo(backend, todo1):
 
 
 @pytest.mark.asyncio
-async def test_create_todo_from_vobject(backend, todo1):
+async def test_create_todo_from_vobject_1(backend, todo_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -156,10 +170,10 @@ async def test_create_todo_from_vobject(backend, todo1):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
     # add event from vobject data
-    vtodo1 = vobject.readOne(todo1)
-    await cal.add_todo(vtodo1)
+    vtodo_fixtures = vobject.readOne(todo_fixtures)
+    await cal.add_todo(vtodo_fixtures)
 
-    todos = await cal.todos()
+    todos = await cal.todos(include_completed=True)
     assert len(todos) == 1
 
     events = await cal.events()
@@ -169,7 +183,14 @@ async def test_create_todo_from_vobject(backend, todo1):
 
 
 @pytest.mark.asyncio
-async def test_create_todo_mark_completed_1(backend, todo1):
+async def test_create_todo_from_vobject_2(backend, todo_fixtures):
+    vtodo = vobject.readOne(todo_fixtures)
+    try:
+        _ = vtodo.vtodo.status
+    except AttributeError:  # no status
+        if backend.get("name") == "radicale":
+            pytest.skip()
+
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -182,7 +203,34 @@ async def test_create_todo_mark_completed_1(backend, todo1):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
-    todo = await cal.add_todo(todo1)
+    # add event from vobject data
+    vtodo_fixtures = vobject.readOne(todo_fixtures)
+    await cal.add_todo(vtodo_fixtures)
+
+    todos = await cal.todos(include_completed=False)
+    assert len(todos) == 1
+
+    events = await cal.events()
+    assert len(events) == 0
+    journals = await cal.journals()
+    assert len(journals) == 0
+
+
+@pytest.mark.asyncio
+async def test_create_todo_mark_completed_1(backend, todo_fixtures):
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = uuid.uuid4().hex
+    password = uuid.uuid4().hex
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    cal_id = uuid.uuid4().hex
+    cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
+
+    todo = await cal.add_todo(todo_fixtures)
 
     todos = await cal.todos(include_completed=True)
     assert len(todos) == 1
@@ -197,7 +245,7 @@ async def test_create_todo_mark_completed_1(backend, todo1):
 
 
 @pytest.mark.asyncio
-async def test_create_todo_in_event_only_calendar(backend, todo1):
+async def test_create_todo_in_event_only_calendar(backend, todo_fixtures):
     """This test does not pass with radicale backend: perhaps radicale accepts
     journal even when the calendar should not support it ?"""
     uri = backend.get('uri')
@@ -213,7 +261,7 @@ async def test_create_todo_in_event_only_calendar(backend, todo1):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
     if backend.get("name") == "radicale":
-        await cal.add_todo(todo1)
+        await cal.add_todo(todo_fixtures)
     else:
         with pytest.raises(error.PutError):
-            await cal.add_todo(todo1)
+            await cal.add_todo(todo_fixtures)

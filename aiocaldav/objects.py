@@ -15,9 +15,10 @@ from lxml import etree
 from urllib.parse import unquote
 import vobject
 
+from aiocaldav.elements import dav, cdav
 from aiocaldav.lib import error, vcal
 from aiocaldav.lib.url import URL
-from aiocaldav.elements import dav, cdav
+from aiocaldav.lib.python_utilities import date_to_utc
 
 
 def errmsg(r):
@@ -563,7 +564,10 @@ class Calendar(DAVObject):
         # if we have one recurring event describing an indefinite
         # series of events.  Hence, if the end date is not set, we
         # skip asking for expanded events.
+        start = date_to_utc(start)
+
         if end:
+            end = date_to_utc(end)
             data = cdav.CalendarData() + cdav.Expand(start, end)
         else:
             data = cdav.CalendarData()
@@ -598,6 +602,8 @@ class Calendar(DAVObject):
          * [FreeBusy(), ...]
 
         """
+        start = date_to_utc(start)
+        end = date_to_utc(end)
         root = cdav.FreeBusyQuery() + [cdav.TimeRange(start, end)]
         response = await self._query(root, 1, 'report')
         return FreeBusy(self, response.raw)
@@ -628,17 +634,19 @@ class Calendar(DAVObject):
             vnotcompleted = cdav.TextMatch('COMPLETED', negate=True)
             vnotcancelled = cdav.TextMatch('CANCELLED', negate=True)
             vstatusNotCompleted = cdav.PropFilter(
-                'STATUS') + cdav.NotDefined()
-            vstatusNotCompleted = cdav.PropFilter(
                 'STATUS') + vnotcompleted
             vstatusNotCancelled = cdav.PropFilter(
                 'STATUS') + vnotcancelled
+            vnostatus = cdav.PropFilter('STATUS') + cdav.NotDefined()
             vnocompletedate = cdav.PropFilter('COMPLETED') + cdav.NotDefined()
-            vtodo = (cdav.CompFilter("VTODO") + vnocompletedate +
-                     vstatusNotCompleted + vstatusNotCancelled)
+            # vnocanceldate = cdav.PropFilter('CANCELLED') + cdav.NotDefined()
+            vtodo = (cdav.CompFilter("VTODO") +
+                     vnocompletedate + vstatusNotCancelled)
+            # vtodo2 = (cdav.CompFilter("VTODO") + vnostatus)
+            vcalendar = cdav.CompFilter("VCALENDAR") + vtodo
         else:
             vtodo = cdav.CompFilter("VTODO")
-        vcalendar = cdav.CompFilter("VCALENDAR") + vtodo
+            vcalendar = cdav.CompFilter("VCALENDAR") + vtodo
         filter = cdav.Filter() + vcalendar
 
         root = cdav.CalendarQuery() + [prop, filter]
@@ -892,8 +900,10 @@ class CalendarObjectResource(DAVObject):
                         obj.add('uid')
                     obj.uid = id
                     break
-        if path is None:
+        if path is None and id is not None:
             path = id + ".ics"
+        if path is None and id is None:
+            raise error.PutError("Nothing to do: no content")
         path = self.parent.url.join(path)
         r = await self.client.put(path, data,
                                   {"Content-Type": 'text/calendar; charset="utf-8"'})
@@ -995,5 +1005,6 @@ class Todo(CalendarObjectResource):
         if not hasattr(self.instance.vtodo, 'status'):
             self.instance.vtodo.add('status')
         self.instance.vtodo.status.value = 'COMPLETED'
-        self.instance.vtodo.add('completed').value = completion_timestamp
+        if not hasattr(self.instance.vtodo, 'completed'):
+            self.instance.vtodo.add('completed').value = completion_timestamp
         await self.save()
