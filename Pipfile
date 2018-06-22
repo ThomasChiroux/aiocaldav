@@ -21,6 +21,9 @@ mypy = "*"
 pytest-asyncio = "*"
 ipython = "*"
 black = "*"
+setuptools = "*"
+wheel = "*"
+twine = "*"
 
 [requires]
 python_version = "3.6"

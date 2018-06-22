@@ -4,11 +4,16 @@ from setuptools import setup, find_packages
 
 version = '0.5.0'
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 if __name__ == '__main__':
     setup(
         name='aiocaldav',
         version=version,
         description="asynchronous CalDAV (RFC4791) client library",
+        long_description=long_description,
+        long_description_content_type="text/markdown",
         classifiers=["Development Status :: 4 - Beta",
                      "Intended Audience :: Developers",
                      "License :: OSI Approved :: GNU General "
