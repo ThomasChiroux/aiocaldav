@@ -85,9 +85,8 @@ def davical_docker():
         "docker-compose -f {location}/docker-compose.yml up -d".format(
             location=backends.get('davical', {}).get("location")),
         shell=True)
-    # TODO: instead of waiting a fixed time, check if caldav server is started with
-    #       a http get loop for example
     time.sleep(5)  # wait for the container to starts
+    # wait for the services to respond (davical responds 401 when started...)
     while True:
         try:
             urllib.request.urlopen(backends.get(
@@ -135,6 +134,12 @@ def event1(request):
 @pytest.fixture(scope="module")
 def event2(request):
     return get_one_static_file("event_ok_caldav_2.ics", full_path=False)
+
+
+@pytest.fixture(scope="module")
+def event3(request):
+    """Recurring event."""
+    return get_one_static_file("event_ok_caldav_3.ics", full_path=False)
 
 
 @pytest.fixture(scope="module", params=get_static_files_list('journal'))

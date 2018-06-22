@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+vobject = "*"
+lxml = "*"
+aiohttp = "*"
+pytz = "*"
+black = "*"
+
+[dev-packages]
+"pep8" = "*"
+"pep257" = "*"
+"flake8" = "*"
+pylint = "*"
+pyflakes = "*"
+mypy = "*"
+"autopep8" = "*"
+pytest-asyncio = "*"
+ipython = "*"
+black = "*"
+
+[requires]
+python_version = "3.6"

@@ -10,7 +10,7 @@ from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
 from aiocaldav.objects import (Calendar, Event, FreeBusy)
 
-from .fixtures import (backend, event_fixtures, event1, event2)
+from .fixtures import (backend, event_fixtures, event1, event2, event3)
 
 
 @pytest.mark.asyncio
@@ -439,3 +439,53 @@ async def test_free_busy_naive_1(backend, event2):
     assert freebusy.instance.vfreebusy
 
     await principal.prune()
+
+
+@pytest.mark.asyncio
+async def test_recurring_date_search(backend, event3):
+    """
+    This is more sanity testing of the server side than testing of the
+    library per se.  How will it behave if we serve it a recurring
+    event?
+    """
+
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    cal_id = uuid.uuid4().hex
+    cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
+
+    evt = await cal.add_event(event3)
+
+    result = await cal.date_search(datetime.datetime(2008, 11, 1, 17, 00, 00,
+                                                     tzinfo=datetime.timezone.utc),
+                                   datetime.datetime(2008, 11, 3, 17, 00, 00,
+                                                     tzinfo=datetime.timezone.utc))
+
+    assert len(result) == 1
+    assert result[0].data.count("END:VEVENT") == 1
+
+    result2 = await cal.date_search(datetime.datetime(2008, 11, 1, 17, 00, 00,
+                                                      tzinfo=datetime.timezone.utc),
+                                    datetime.datetime(2008, 11, 3, 17, 00, 00,
+                                                      tzinfo=datetime.timezone.utc))
+    assert len(result2) == 1
+
+    # So much for standards ... seems like different servers
+    # behaves differently
+    # COMPATIBILITY PROBLEMS - look into it
+    # if "RRULE" in result2[0].data and "BEGIN:STANDARD" not in result2[0].data:
+    assert result2[0].data.count("END:VEVENT") == 1
+    # else:
+    #    assert result2[0].data.count("END:VEVENT") == 2
+
+    # The recurring events should not be expanded when using the
+    # events() method
+    events = await cal.events()
+    assert len(events) == 1

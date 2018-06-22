@@ -396,6 +396,7 @@ class Principal(DAVObject):
     def _calendar_home_setter(self, url):
         # TODO: Handle when url is None ?
         if isinstance(url, CalendarSet):
+            self._calendar_home_set = url
             return url
         sanitized_url = URL.objectify(url)
         if (sanitized_url.hostname and
@@ -403,8 +404,9 @@ class Principal(DAVObject):
             # icloud (and others?) having a load balanced system,
             # where each principal resides on one named host
             self.client.url = sanitized_url
-        return CalendarSet(
+        self._calendar_home_set = CalendarSet(
             self.client, self.client.url.join(sanitized_url))
+        return self._calendar_home_set
 
     async def calendars(self):
         """

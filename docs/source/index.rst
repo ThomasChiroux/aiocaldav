@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-=================================
- Documentation: caldav |release|
-=================================
+===================================
+ Documentation: aiocaldav |release|
+===================================
 
 Contents
 ========
@@ -13,13 +13,13 @@ Contents
 .. toctree::
    :maxdepth: 1
 
-   caldav/davclient
-   caldav/objects
+   aiocaldav/davclient
+   aiocaldav/objects
 
 Python 3
 ========
 
-The caldav library should work well both with python2 and python3.
+The aiocaldav library is only compatible with python 3.6+
 
 Quickstart
 ==========
@@ -27,8 +27,8 @@ Quickstart
 .. code-block:: python
 
   from datetime import datetime
-  import caldav
-  from caldav.elements import dav, cdav
+  import aiocaldav
+  from aiocaldav.elements import dav, cdav
   
   # Caldav url
   url = "https://user:pass@hostname/caldav.php/"
@@ -45,23 +45,23 @@ Quickstart
   END:VEVENT
   END:VCALENDAR
   """
-  
+
   client = caldav.DAVClient(url)
-  principal = client.principal()
-  calendars = principal.calendars()
+  principal = await client.principal()
+  calendars = await principal.calendars()
   if len(calendars) > 0:
       calendar = calendars[0]
       print "Using calendar", calendar
   
       print "Renaming"
-      calendar.set_properties([dav.DisplayName("Test calendar"),])
-      print calendar.get_properties([dav.DisplayName(),])
+      await calendar.set_properties([dav.DisplayName("Test calendar"),])
+      print await calendar.get_properties([dav.DisplayName(),])
   
-      event = calendar.add_event(vcal)
+      event = await calendar.add_event(vcal)
       print "Event", event, "created"
   
       print "Looking for events in 2010-05"
-      results = calendar.date_search(
+      results = await calendar.date_search(
           datetime(2010, 5, 1), datetime(2010, 6, 1))
 
       for event in results:
@@ -70,12 +70,12 @@ Quickstart
 More examples
 =============
 
-See the `test code <https://bitbucket.org/cyrilrbt/caldav/src/default/tests/test_caldav.py?at=default>`_ for more usage examples.  Tobias Brox is also working on a `command line interface <https://github.com/tobixen/calendar-cli>`_  built around the caldav library.
+See the `test code <https://github.com/ThomasChiroux/aiocaldav/tree/master/tests>`_ for more usage examples.
 
 Notable classes and workflow
 ============================
 
- * You'd always start by initiating a :class:`caldav.davclient.DAVClient`
+ * You'd always start by initiating a :class:`aiocaldav.davclient.DAVClient`
    object, this object holds the authentication details for the
    server.
 
@@ -102,8 +102,9 @@ Note that those are also available as :class:`caldav.DAVClient`,
 Compatibility
 =============
 
-The test suite is regularly run against Baikal, DAViCal, Zimbra
-and Bedework.  Some compatibility issues have been found, search the
+The aiocaldav test suite is run locally against radicale and DAVical for now.
+
+Some compatibility issues have been found in caldav project listed below, search the
 test code for "COMPATIBILITY" for details.  Notably;
 
  * You may want to avoid non-ASCII characters in the calendar name, or
@@ -144,29 +145,8 @@ To start the tests code, run:
 
 .. code-block:: bash
 
-  $ python setup.py nosetests
+  $ pytest .
 
-Note that there is a big bug in the functional tests; if the test
-suite is run in parallell towards the same servers/principals, some
-tests will fail or raise exceptions, and this may very well happen if
-multiple developers runs the tests at the same time.  This hasn't been
-a problem so far.
-
-It will run some unit tests and some functional tests against some
-dedicated caldav servers hosted by Tobias Brox.  You may add your own
-private servers into tests/conf_private.py, like this:
-
-.. code-block:: python
-
-  caldav_servers = [{
-      "url": "https://myserver.example.com:80/caldav.php/",
-      'username': 'testuser',
-      'password': 'hunter2'}]
-
-the dict may contain:
- * username and password (if not embedded in the URL)
- * principal_url (used to verify client.principal().url)
- * backwards_compatibility_url (deprecated - URLs that worked with caldav versions prior to 0.2 goes here)
 
 Documentation
 =============
