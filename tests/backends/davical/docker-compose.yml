@@ -1,0 +1,7 @@
+version: '3'
+services:
+  radicale:
+    container_name: davical_tests
+    image: natansdj/davical
+    ports:
+      - "5232:80"

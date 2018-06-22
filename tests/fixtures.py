@@ -4,6 +4,8 @@ import glob
 import os
 import subprocess
 import time
+import urllib.request
+import urllib.error
 
 import pytest
 
@@ -41,14 +43,19 @@ def get_static_files_list(filetype="event", ok=True):
     return sorted(glob.glob(searched_files))
 
 
-@contextlib.contextmanager
-def radicale_docker():
-    # TODO: use pkg_resource to discover the good path of the docker-compose file.
+def check_docker():
+    """Check if docker is running."""
     try:
         subprocess.run("docker ps", shell=True).check_returncode()
     except subprocess.CalledProcessError:
         raise Exception(
             "Docker seems not started. Start it before running tests")
+
+
+@contextlib.contextmanager
+def radicale_docker():
+    check_docker()
+    # TODO: use pkg_resource to discover the good path of the docker-compose file.
     subprocess.run(
         "docker-compose -f {location}/docker-compose.yml up -d".format(
             location=backends.get('radicale', {}).get("location")),
@@ -70,10 +77,49 @@ def radicale_direct():
     yield backends.get('radicale2', {})
 
 
-@pytest.fixture(scope="module")
+@contextlib.contextmanager
+def davical_docker():
+    check_docker()
+    # TODO: use pkg_resource to discover the good path of the docker-compose file.
+    subprocess.run(
+        "docker-compose -f {location}/docker-compose.yml up -d".format(
+            location=backends.get('davical', {}).get("location")),
+        shell=True)
+    # TODO: instead of waiting a fixed time, check if caldav server is started with
+    #       a http get loop for example
+    time.sleep(5)  # wait for the container to starts
+    while True:
+        try:
+            urllib.request.urlopen(backends.get(
+                'davical', {}).get("uri"), timeout=1)
+        except urllib.error.HTTPError:
+            break
+        except urllib.error.URLError:
+            pass
+
+    yield backends.get('davical', {})
+    subprocess.run(
+        "docker-compose -f {location}/docker-compose.yml down".format(
+            location=backends.get('davical', {}).get("location")),
+        shell=True)
+    time.sleep(3)  # wait for the container to stop
+
+
+@contextlib.contextmanager
+def davical_direct():
+    # TODO: use pkg_resource to discover the good path of the docker-compose file.
+    yield backends.get('davical2', {})
+
+
+@pytest.fixture(scope="session", params=['radicale', 'davical'])
 def backend(request):
-    with radicale_direct() as backend:
-        yield backend
+    """Backend actually used."""
+    if request.param == 'radicale':
+        with radicale_docker() as backend:
+            yield backend
+    elif request.param == 'davical':
+        with davical_docker() as backend:
+            yield backend
 
 
 @pytest.fixture(scope="module", params=get_static_files_list('event'))

@@ -20,13 +20,24 @@ backends = {}
 backends['radicale'] = {"name": "radicale",
                         "type": "docker",
                         "location": "tests/backends/radicale",
-                        "uri": "http://172.17.0.1:5232/",
-                        "login": "toto",
-                        "password": "tutu", }
+                        "uri": "http://172.17.0.1:5232/"}
 
 backends['radicale2'] = {"name": "radicale",
                          "type": "direct",
                          "location": "tests/backends/radicale",
-                         "uri": "http://172.17.0.1:5232/",
-                         "login": "toto",
-                         "password": "tutu", }
+                         "uri": "http://172.17.0.1:5232/"}
+
+backends['davical'] = {"name": "davical",
+                       "type": "docker",
+                       "location": "tests/backends/davical",
+                       "uri": "http://172.18.0.1:5232/caldav.php/",
+                       "login": "admin",
+                       "password": "12345", }
+
+
+backends['davical2'] = {"name": "davical",
+                        "type": "direct",
+                        "location": "tests/backends/davical",
+                        "uri": "http://172.18.0.1:5232/caldav.php/",
+                        "login": "admin",
+                        "password": "12345", }

@@ -413,6 +413,13 @@ class Principal(DAVObject):
         cal = await self.calendar_home_set()
         return await cal.calendars()
 
+    async def prune(self):
+        """
+        Delete all calendars in this Principal.
+        """
+        for cal in await self.calendars():
+            await cal.delete()
+
 
 class Calendar(DAVObject):
     """

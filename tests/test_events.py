@@ -18,8 +18,8 @@ async def test_create_event_1(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -42,6 +42,8 @@ async def test_create_event_1(backend, event_fixtures):
     assert len(events2) == 1
     assert events2[0].url == events[0].url
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_create_event_2(backend, event_fixtures):
@@ -49,8 +51,8 @@ async def test_create_event_2(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -74,14 +76,16 @@ async def test_create_event_2(backend, event_fixtures):
     assert len(events2) == 1
     assert events2[0].url == events[0].url
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_create_delete_calendar_with_event(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -105,14 +109,16 @@ async def test_create_delete_calendar_with_event(backend, event_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal2.events()
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_create_event_from_vobject(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -134,14 +140,16 @@ async def test_create_event_from_vobject(backend, event_fixtures):
     assert len(events2) == 1
     assert events2[0].url == events[0].url
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_lookup_event_1(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -168,14 +176,16 @@ async def test_lookup_event_1(backend, event_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal.event_by_uid("0")
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_delete_event_1(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -197,6 +207,8 @@ async def test_delete_event_1(backend, event_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal.event_by_uid(ev1.instance.vevent.uid.valueRepr())
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_create_event_in_journal_only_calendar(backend, event_fixtures):
@@ -205,8 +217,8 @@ async def test_create_event_in_journal_only_calendar(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -214,11 +226,13 @@ async def test_create_event_in_journal_only_calendar(backend, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VJOURNAL'])
-    if backend.get("name") == "radicale":
+    if backend.get("name") in ["radicale", "davical"]:
         await cal.add_event(event_fixtures)
     else:
         with pytest.raises(error.PutError):
             await cal.add_event(event_fixtures)
+
+    await principal.prune()
 
 
 @pytest.mark.asyncio
@@ -228,8 +242,8 @@ async def test_create_event_in_todo_only_calendar(backend, event_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -237,11 +251,13 @@ async def test_create_event_in_todo_only_calendar(backend, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
-    if backend.get("name") == "radicale":
+    if backend.get("name") in ["radicale", "davical"]:
         await cal.add_event(event_fixtures)
     else:
         with pytest.raises(error.PutError):
             await cal.add_event(event_fixtures)
+
+    await principal.prune()
 
 
 @pytest.mark.asyncio
@@ -250,8 +266,8 @@ async def test_date_search_naive_1(backend, event1, event2):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -287,6 +303,8 @@ async def test_date_search_naive_1(backend, event1, event2):
     result4 = await cal.date_search(datetime.datetime(2007, 7, 13, 17, 00, 00))
     assert len(result4) == 1
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_date_search_tzaware_gmt_1(backend, event1, event2):
@@ -294,8 +312,8 @@ async def test_date_search_tzaware_gmt_1(backend, event1, event2):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -338,6 +356,8 @@ async def test_date_search_tzaware_gmt_1(backend, event1, event2):
                                                       tzinfo=datetime.timezone.utc))
     assert len(result4) == 1
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_date_search_tzaware_2(backend, event1):
@@ -345,8 +365,8 @@ async def test_date_search_tzaware_2(backend, event1):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -387,6 +407,8 @@ async def test_date_search_tzaware_2(backend, event1):
     assert len(result) == 1
     # assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_free_busy_naive_1(backend, event2):
@@ -396,8 +418,8 @@ async def test_free_busy_naive_1(backend, event2):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -415,3 +437,5 @@ async def test_free_busy_naive_1(backend, event2):
     # TODO: assert something more complex on the return object
     assert isinstance(freebusy, FreeBusy)
     assert freebusy.instance.vfreebusy
+
+    await principal.prune()

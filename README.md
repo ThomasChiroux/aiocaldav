@@ -9,12 +9,17 @@ It also targets only python 3.6+ (remove six and older python support)
 
 Drawbacks:
 
-* no DigestAuth Support
+* no DigestAuth Support for now
 
-# caldav
+Bug corrections since caldav v0.5.0:
 
-This project is a CalDAV ([RFC4791](http://www.ietf.org/rfc/rfc4791.txt)) client library for Python.
+* Todo list without completed query syntax was wrong
+* It was possible to completed an already completed task. Now complete() an already
+  completed task does nothing (perhaps should we raise an error instead ?)
+* changed datetime output in cdav to match rfc 5545 (for timezones)
+* 
 
- * [Pypi](http://pypi.python.org/pypi/caldav)
- * [Documentation](http://packages.python.org/caldav)
+Evolutions since caldav v0.5.0:
+
+* package name changed from caldav to aiocaldav
 

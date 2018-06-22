@@ -16,8 +16,8 @@ async def test_create_journal_1(backend, journal_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -35,14 +35,16 @@ async def test_create_journal_1(backend, journal_fixtures):
     todos = await cal.todos()
     assert len(todos) == 0
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_create_journal_2(backend, journal_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -61,14 +63,16 @@ async def test_create_journal_2(backend, journal_fixtures):
     todos = await cal.todos()
     assert len(todos) == 0
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_create_delete_calendar_with_journal(backend, journal_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -89,14 +93,16 @@ async def test_create_delete_calendar_with_journal(backend, journal_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal2.journals()
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_create_journal_from_vobject(backend, journal_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -116,14 +122,16 @@ async def test_create_journal_from_vobject(backend, journal_fixtures):
     todos = await cal.todos()
     assert len(todos) == 0
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_lookup_journal_1(backend, journal_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -147,14 +155,16 @@ async def test_lookup_journal_1(backend, journal_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal.journal_by_uid("0")
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_delete_journal_1(backend, journal_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -173,6 +183,8 @@ async def test_delete_journal_1(backend, journal_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal.journal_by_uid(jnl1.instance.vjournal.uid.valueRepr())
 
+    await principal.prune()
+
 
 @pytest.mark.asyncio
 async def test_create_journal_in_event_only_calendar(backend, journal_fixtures):
@@ -181,8 +193,8 @@ async def test_create_journal_in_event_only_calendar(backend, journal_fixtures):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = uuid.uuid4().hex
-    password = uuid.uuid4().hex
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     principal = await caldav.principal()
@@ -190,8 +202,10 @@ async def test_create_journal_in_event_only_calendar(backend, journal_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
-    if backend.get("name") == "radicale":
+    if backend.get("name") in ["radicale", "davical"]:
         await cal.add_journal(journal_fixtures)
     else:
         with pytest.raises(error.PutError):
             await cal.add_journal(journal_fixtures)
+
+    await principal.prune()
