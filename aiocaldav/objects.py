@@ -143,6 +143,7 @@ class DAVObject:
         if root:
             body = etree.tostring(root.xmlelement(), encoding="utf-8",
                                   xml_declaration=True)
+        print("QUERY: %s, URL:%s, BODY:%s" % (query_method, url, body))
         ret = await getattr(self.client, query_method)(
             url, body, depth)
         if ret.status == 404:
@@ -615,6 +616,7 @@ class Calendar(DAVObject):
         end = date_to_utc(end)
         root = cdav.FreeBusyQuery() + [cdav.TimeRange(start, end)]
         response = await self._query(root, 1, 'report')
+        print(response.raw)
         return FreeBusy(parent=self, data=response.raw)
 
     async def todos(self, sort_keys=('due', 'priority'), include_completed=False,

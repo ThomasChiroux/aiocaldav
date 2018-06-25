@@ -27,6 +27,7 @@ backends['radicale2'] = {"name": "radicale",
                          "location": "tests/backends/radicale",
                          "uri": "http://172.17.0.1:5232/"}
 
+
 backends['davical'] = {"name": "davical",
                        "type": "docker",
                        "location": "tests/backends/davical",

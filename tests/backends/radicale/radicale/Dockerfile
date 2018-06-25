@@ -15,7 +15,7 @@ RUN apk add --no-cache --virtual=build-dependencies \
   git \
   shadow \
   && pip install passlib[bcrypt] \
-  && pip install git+https://github.com/Kozea/Radicale.git \
+  && pip install git+https://github.com/ThomasChiroux/Radicale.git@freebusy \
   && apk del --purge build-dependencies \ 
   && addgroup -g $GID radicale \
   && adduser -D -s /bin/false -H -u $UID -G radicale radicale \

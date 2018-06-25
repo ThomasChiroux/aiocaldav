@@ -1,6 +1,6 @@
 version: '3'
 services:
-  radicale:
+  davical:
     container_name: davical_tests
     image: natansdj/davical
     ports:
