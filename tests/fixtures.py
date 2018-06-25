@@ -111,8 +111,11 @@ def davical_direct():
 
 
 @pytest.fixture(scope="session", params=['radicale', 'davical'])
+# @pytest.fixture(scope="session")
 def backend(request):
     """Backend actually used."""
+    # with davical_direct() as backend:
+    #    yield backend
     if request.param == 'radicale':
         with radicale_docker() as backend:
             yield backend
