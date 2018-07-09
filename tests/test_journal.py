@@ -202,7 +202,7 @@ async def test_create_journal_in_event_only_calendar(backend, journal_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
-    if backend.get("name") in ["radicale", "davical"]:
+    if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_journal(journal_fixtures)
     else:
         with pytest.raises(error.PutError):

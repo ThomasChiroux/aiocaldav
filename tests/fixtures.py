@@ -110,17 +110,48 @@ def davical_direct():
     yield backends.get('davical2', {})
 
 
+@contextlib.contextmanager
+def xandikos_docker():
+    check_docker()
+    # TODO: use pkg_resource to discover the good path of the docker-compose file.
+    subprocess.run(
+        "docker-compose -f {location}/docker-compose.yml up -d".format(
+            location=backends.get('xandikos', {}).get("location")),
+        shell=True)
+    # TODO: instead of waiting a fixed time, check if caldav server is started with
+    #       a http get loop for example
+    time.sleep(5)  # wait for the container to starts
+    yield backends.get('xandikos', {})
+    subprocess.run(
+        "docker-compose -f {location}/docker-compose.yml down".format(
+            location=backends.get('xandikos', {}).get("location")),
+        shell=True)
+    time.sleep(3)  # wait for the container to stop
+
+
+@contextlib.contextmanager
+def xandikos_direct():
+    # TODO: use pkg_resource to discover the good path of the docker-compose file.
+    yield backends.get('xandikos2', {})
+
+
 @pytest.fixture(scope="session", params=['radicale', 'davical'])
 # @pytest.fixture(scope="session")
 def backend(request):
     """Backend actually used."""
-    # with davical_direct() as backend:
-    #    yield backend
+    # xandikos is not ready, it last some bug features like RRULE support, so we do
+    # not test if for now.
+
+    # with radicale_direct() as backend:
+    #     yield backend
     if request.param == 'radicale':
         with radicale_docker() as backend:
             yield backend
     elif request.param == 'davical':
         with davical_docker() as backend:
+            yield backend
+    elif request.param == 'xandikos':
+        with xandikos_docker() as backend:
             yield backend
 
 

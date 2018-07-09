@@ -73,7 +73,13 @@ async def test_create_todo_without_completed_1(backend, todo_fixtures):
         _ = vtodo.vtodo.status
     except AttributeError:  # no status
         if backend.get("name") == "radicale":
+            # Radicale needs a status in todo
             pytest.skip()
+
+    try:
+        _ = vtodo.vtodo.completed
+    except AttributeError:
+        pass
 
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
@@ -93,7 +99,7 @@ async def test_create_todo_without_completed_1(backend, todo_fixtures):
 
     try:
         _ = vtodo.vtodo.completed
-    except AttributeError:  # no completed, should be in the list
+    except (AttributeError, KeyError):  # no completed, should be in the list
         assert len(todos) == 1
     else:
         assert len(todos) == 0
@@ -133,7 +139,7 @@ async def test_create_todo_without_completed_2(backend, todo_fixtures):
     todos = await cal.todos(include_completed=False)
     try:
         _ = vtodo.vtodo.completed
-    except AttributeError:  # no completed, should be in the list
+    except (AttributeError, KeyError):  # no completed, should be in the list
         assert len(todos) == 1
     else:
         assert len(todos) == 0
@@ -233,7 +239,7 @@ async def test_create_todo_from_vobject_2(backend, todo_fixtures):
     todos = await cal.todos(include_completed=False)
     try:
         _ = vtodo.vtodo.completed
-    except AttributeError:  # no completed, should be in the list
+    except (AttributeError, KeyError):  # no completed, should be in the list
         assert len(todos) == 1
     else:
         assert len(todos) == 0
@@ -292,7 +298,7 @@ async def test_create_todo_in_event_only_calendar(backend, todo_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
-    if backend.get("name") in ["radicale", "davical"]:
+    if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_todo(todo_fixtures)
     else:
         with pytest.raises(error.PutError):

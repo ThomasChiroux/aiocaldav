@@ -53,6 +53,10 @@ class NotFoundError(CaldavError):
     pass
 
 
+class ServerError(CaldavError):
+    pass
+
+
 exception_by_method = {}
 for method in ('delete', 'put', 'mkcalendar', 'mkcol', 'report', 'propset',
                'propfind'):

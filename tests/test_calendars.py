@@ -61,7 +61,7 @@ async def test_calendars_local(backend):
 
     cal = await principal.calendar(name="Yep", cal_id=cal_id)
     assert cal.url is not None
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
 
     await principal.prune()
 
@@ -82,7 +82,7 @@ async def test_create_calendars(backend):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal.url is not None
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
     events2 = await (await principal.calendar(name="Yep", cal_id=cal_id)).events()
@@ -108,7 +108,7 @@ async def test_create_calendars_component_set(backend):
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
     assert cal.url is not None
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
     events2 = await (await principal.calendar(name="Yep", cal_id=cal_id)).events()
@@ -130,17 +130,17 @@ async def test_create_delete_calendars(backend):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
     cal2 = await principal.calendar(name="Yep", cal_id=cal_id)
-    assert cal2.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal2.url.canonical())
 
     await cal.delete()
 
     cal3 = await principal.calendar(name="Yep", cal_id=cal_id)
     assert cal3.url is not None
-    assert cal3.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal3.url.canonical())
     with pytest.raises(error.NotFoundError):
         await cal3.events()
 

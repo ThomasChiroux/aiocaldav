@@ -66,8 +66,7 @@ END:VCALENDAR"""
 async def test_free_busy_naive_1(backend, event2):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
-        # pytest.skip()
-        pass
+        pytest.skip()
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -79,7 +78,7 @@ async def test_free_busy_naive_1(backend, event2):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -115,7 +114,7 @@ async def test_free_busy_naive_2(backend, event1, event2, eventfb_2_adjacent):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -158,7 +157,7 @@ async def test_free_busy_naive_3(backend, event1, event2, eventfb_2_adjacent):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -197,7 +196,7 @@ async def test_free_busy_naive_4(backend, event1, event2, eventfb_2_nonadjacent)
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -240,7 +239,7 @@ async def test_free_busy_naive_5(backend, event1, event2, eventfb_2_nonadjacent)
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -280,7 +279,7 @@ async def test_free_busy_naive_6(backend, event3):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -314,7 +313,7 @@ async def test_free_busy_naive_7(backend, event3_opaque):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -341,8 +340,7 @@ async def test_free_busy_naive_7(backend, event3_opaque):
 async def test_free_busy_utc_1(backend, event2):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
-        # pytest.skip()
-        pass
+        pytest.skip()
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -354,7 +352,7 @@ async def test_free_busy_utc_1(backend, event2):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -393,7 +391,7 @@ async def test_free_busy_utc_2(backend, event1, event2, eventfb_2_adjacent):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -439,7 +437,7 @@ async def test_free_busy_utc_3(backend, event1, event2, eventfb_2_adjacent):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -481,7 +479,7 @@ async def test_free_busy_utc_4(backend, event1, event2, eventfb_2_nonadjacent):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -527,7 +525,7 @@ async def test_free_busy_utc_5(backend, event1, event2, eventfb_2_nonadjacent):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -570,7 +568,7 @@ async def test_free_busy_utc_6(backend, event3):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -607,7 +605,7 @@ async def test_free_busy_utc_7(backend, event3_opaque):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 

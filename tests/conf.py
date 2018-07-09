@@ -16,7 +16,6 @@ uri: caldav URI
 
 backends = {}
 
-# local radicale server
 backends['radicale'] = {"name": "radicale",
                         "type": "docker",
                         "location": "tests/backends/radicale",
@@ -42,3 +41,18 @@ backends['davical2'] = {"name": "davical",
                         "uri": "http://172.18.0.1:5232/caldav.php/",
                         "login": "admin",
                         "password": "12345", }
+
+
+backends['xandikos'] = {"name": "xandikos",
+                        "type": "docker",
+                        "location": "tests/backends/xandikos",
+                        "uri": "http://172.17.0.1:5232/",
+                        "login": "user1",
+                        "password": "", }
+
+backends['xandikos2'] = {"name": "xandikos",
+                         "type": "direct",
+                         "location": "tests/backends/xandikos",
+                         "uri": "http://172.17.0.1:5232/",
+                         "login": "user1",
+                         "password": "", }

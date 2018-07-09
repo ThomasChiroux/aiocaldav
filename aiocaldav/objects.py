@@ -143,7 +143,7 @@ class DAVObject:
         if root:
             body = etree.tostring(root.xmlelement(), encoding="utf-8",
                                   xml_declaration=True)
-        print("QUERY: %s, URL:%s, BODY:%s" % (query_method, url, body))
+        # print("QUERY: %s, URL:%s, BODY:%s" % (query_method, url, body))
         ret = await getattr(self.client, query_method)(
             url, body, depth)
         if ret.status == 404:
@@ -206,8 +206,13 @@ class DAVObject:
         response = await self._query_properties(props, depth)
         properties = self._handle_prop_response(response, props)
         path = unquote(self.url.path)
-        exchange_path = path + '/'
-
+        if path.endswith('/'):
+            exchange_path = path
+            path = path[:-1]
+        else:
+            exchange_path = path + '/'
+        print(properties)
+        print(path)
         if path in properties:
             rc = properties[path]
         elif exchange_path in properties:
@@ -881,8 +886,10 @@ class CalendarObjectResource(DAVObject):
         Load the object from the caldav server.
         """
         r = await self.client.request(self.url)
-        if r.status == 404:
+        if r.status >= 400 and r.status < 500:
             raise error.NotFoundError(errmsg(r))
+        elif r.status >= 500:
+            raise error.ServerError(errmsg(r))
         self.data = vcal.fix(r.raw)
         return self
 
@@ -971,14 +978,34 @@ class Event(CalendarObjectResource):
     """
     The `Event` object is used to represent an event (VEVENT).
     """
-    pass
+    async def load(self):
+        """
+        Load the object from the caldav server.
+        """
+        r = await self.client.request(self.url, headers={"Accept": "text/calendar"})
+        if r.status >= 400 and r.status < 500:
+            raise error.NotFoundError(errmsg(r))
+        elif r.status >= 500:
+            raise error.ServerError(errmsg(r))
+        self.data = vcal.fix(r.raw)
+        return self
 
 
 class Journal(CalendarObjectResource):
     """
     The `Journal` object is used to represent a journal entry (VJOURNAL).
     """
-    pass
+    async def load(self):
+        """
+        Load the object from the caldav server.
+        """
+        r = await self.client.request(self.url, headers={"Accept": "text/calendar"})
+        if r.status >= 400 and r.status < 500:
+            raise error.NotFoundError(errmsg(r))
+        elif r.status >= 500:
+            raise error.ServerError(errmsg(r))
+        self.data = vcal.fix(r.raw)
+        return self
 
 
 class FreeBusy(CalendarObjectResource):

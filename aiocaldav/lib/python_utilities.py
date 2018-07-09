@@ -8,7 +8,7 @@ def to_wire(text):
 
 
 def to_local(text):
-    if text and not isinstance(text, str):
+    if isinstance(text, bytes):
         text = text.decode('utf-8')
     return text
 

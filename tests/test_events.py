@@ -26,7 +26,7 @@ async def test_create_event_1(backend, event_fixtures):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -60,7 +60,7 @@ async def test_create_event_2(backend, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -94,7 +94,7 @@ async def test_create_2events(backend, event1, event2):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -128,7 +128,7 @@ async def test_create_delete_calendar_with_event(backend, event_fixtures):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -192,7 +192,7 @@ async def test_lookup_event_1(backend, event_fixtures):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -228,7 +228,7 @@ async def test_delete_event_1(backend, event_fixtures):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -262,7 +262,7 @@ async def test_create_event_in_journal_only_calendar(backend, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VJOURNAL'])
-    if backend.get("name") in ["radicale", "davical"]:
+    if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_event(event_fixtures)
     else:
         with pytest.raises(error.PutError):
@@ -287,7 +287,7 @@ async def test_create_event_in_todo_only_calendar(backend, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
-    if backend.get("name") in ["radicale", "davical"]:
+    if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_event(event_fixtures)
     else:
         with pytest.raises(error.PutError):
@@ -310,7 +310,7 @@ async def test_date_search_naive_1(backend, event1, event2):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -318,7 +318,6 @@ async def test_date_search_naive_1(backend, event1, event2):
 
     result = await cal.date_search(datetime.datetime(2006, 7, 13, 17, 00, 00),
                                    datetime.datetime(2006, 7, 15, 17, 00, 00))
-
     assert len(result) == 1
     assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
 
@@ -356,7 +355,7 @@ async def test_date_search_tzaware_gmt_1(backend, event1, event2):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 
@@ -409,7 +408,7 @@ async def test_date_search_tzaware_2(backend, event1):
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
-    assert cal.url == uri + login + "/" + cal_id + '/'
+    assert cal_id in str(cal.url.canonical())
     events = await cal.events()
     assert len(events) == 0
 

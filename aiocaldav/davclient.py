@@ -231,6 +231,8 @@ class DAVClient:
         log.debug(
             "sending request - method={0}, url={1}, headers={2}\nbody:\n{3}"
             .format(method, url, combined_headers, body))
+        print("sending request - method={0}, url={1}, headers={2}\nbody:\n{3}"
+              .format(method, url, combined_headers, body))
         auth = None
         # digest auth is not (yet) supported by aiohttp, so skip it for now
         # if self.auth is None and self.username is not None:
