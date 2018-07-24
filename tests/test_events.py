@@ -10,7 +10,7 @@ from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
 from aiocaldav.objects import (Calendar, Event, FreeBusy)
 
-from .fixtures import (backend, event_fixtures, event1, event2, event3)
+from .fixtures import (backend, event_fixtures, event1, event1bis, event2, event3)
 
 
 @pytest.mark.asyncio
@@ -265,7 +265,7 @@ async def test_create_event_in_journal_only_calendar(backend, event_fixtures):
     if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_event(event_fixtures)
     else:
-        with pytest.raises(error.PutError):
+        with pytest.raises(error.AuthorizationError):
             await cal.add_event(event_fixtures)
 
     await principal.prune()
@@ -290,14 +290,14 @@ async def test_create_event_in_todo_only_calendar(backend, event_fixtures):
     if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_event(event_fixtures)
     else:
-        with pytest.raises(error.PutError):
+        with pytest.raises(error.AuthorizationError):
             await cal.add_event(event_fixtures)
 
     await principal.prune()
 
 
 @pytest.mark.asyncio
-async def test_date_search_naive_1(backend, event1, event2):
+async def test_date_search_naive_1(backend, event1, event1bis):
     """Test naive date search."""
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
@@ -321,9 +321,9 @@ async def test_date_search_naive_1(backend, event1, event2):
     assert len(result) == 1
     assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
 
-    # event2 is same UID, but one year ahead.
+    # event1bis is same UID, but one year ahead.
     # The timestamp should change.
-    evt1.data = event2
+    evt1.data = event1bis
     await evt1.save()
 
     result2 = await cal.date_search(datetime.datetime(2006, 7, 13, 17, 00, 00),
@@ -342,7 +342,7 @@ async def test_date_search_naive_1(backend, event1, event2):
 
 
 @pytest.mark.asyncio
-async def test_date_search_tzaware_gmt_1(backend, event1, event2):
+async def test_date_search_tzaware_gmt_1(backend, event1, event1bis):
     """Test naive date search."""
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
@@ -369,9 +369,9 @@ async def test_date_search_tzaware_gmt_1(backend, event1, event2):
     assert len(result) == 1
     assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
 
-    # event2 is same UID, but one year ahead.
+    # event1bis is same UID, but one year ahead.
     # The timestamp should change.
-    evt1.data = event2
+    evt1.data = event1bis
     await evt1.save()
 
     result2 = await cal.date_search(datetime.datetime(2006, 7, 13, 17, 00, 00,

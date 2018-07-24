@@ -1,0 +1,12 @@
+version: '3'
+services:
+  xandikos:
+    container_name: xandikos_tests
+    build:
+      context: ./xandikos
+    image: xandikos_tests:latest
+    ports:
+      - "5232:8000"
+    # read_only: false
+    #volumes:
+    #  - /tmp:/data

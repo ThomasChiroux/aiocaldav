@@ -128,15 +128,23 @@ async def test_free_busy_naive_2(backend, event1, event2, eventfb_2_adjacent):
 
     assert isinstance(freebusy, FreeBusy)
     assert freebusy.instance.vfreebusy
-    assert len(freebusy.instance.vfreebusy.freebusy_list) == 2
+    if backend.get("name") == "davical":
+        # davical report 2 freebusy, which seems wrong: TODO: Fail the test in this case ?
+        assert len(freebusy.instance.vfreebusy.freebusy_list) == 2
 
-    assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
-        datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
 
-    assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
-        datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 18, 0, tzinfo=pytz.utc))
+        assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
+            datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 18, 0, tzinfo=pytz.utc))
+    else:
+        assert len(freebusy.instance.vfreebusy.freebusy_list) == 1
+
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 17, 0, tzinfo=pytz.utc))
 
     await principal.prune()
 
@@ -172,10 +180,15 @@ async def test_free_busy_naive_3(backend, event1, event2, eventfb_2_adjacent):
     assert isinstance(freebusy, FreeBusy)
     assert freebusy.instance.vfreebusy
     assert len(freebusy.instance.vfreebusy.freebusy_list) == 1
-
-    assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
-        datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+    if backend.get("name") == "davical":
+        # davical report the full event period instead of caping by the freebusy request
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+    else:
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 3, 0, tzinfo=pytz.utc))
 
     await principal.prune()
 
@@ -216,9 +229,15 @@ async def test_free_busy_naive_4(backend, event1, event2, eventfb_2_nonadjacent)
         datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
         datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
 
-    assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
-        datetime.datetime(2007, 7, 15, 6, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 19, 0, tzinfo=pytz.utc))
+    if backend.get("name") == "davical":
+        # davical report the full event period instead of caping by the freebusy request
+        assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
+            datetime.datetime(2007, 7, 15, 6, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 19, 0, tzinfo=pytz.utc))
+    else:
+        assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
+            datetime.datetime(2007, 7, 15, 6, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 17, 0, tzinfo=pytz.utc))
 
     await principal.prune()
 
@@ -255,9 +274,15 @@ async def test_free_busy_naive_5(backend, event1, event2, eventfb_2_nonadjacent)
     assert freebusy.instance.vfreebusy
     assert len(freebusy.instance.vfreebusy.freebusy_list) == 1
 
-    assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
-        datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+    if backend.get("name") == "davical":
+        # davical report the full event period instead of caping by the freebusy request
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+    else:
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 3, 0, tzinfo=pytz.utc))
 
     await principal.prune()
 
@@ -408,15 +433,23 @@ async def test_free_busy_utc_2(backend, event1, event2, eventfb_2_adjacent):
 
     assert isinstance(freebusy, FreeBusy)
     assert freebusy.instance.vfreebusy
-    assert len(freebusy.instance.vfreebusy.freebusy_list) == 2
+    if backend.get("name") == "davical":
+        # davical does not group adjacent FB requests...
+        assert len(freebusy.instance.vfreebusy.freebusy_list) == 2
 
-    assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
-        datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
 
-    assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
-        datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 18, 0, tzinfo=pytz.utc))
+        assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
+            datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 18, 0, tzinfo=pytz.utc))
+    else:
+        assert len(freebusy.instance.vfreebusy.freebusy_list) == 1
+
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 17, 0, tzinfo=pytz.utc))
 
     await principal.prune()
 
@@ -456,9 +489,15 @@ async def test_free_busy_utc_3(backend, event1, event2, eventfb_2_adjacent):
     assert freebusy.instance.vfreebusy
     assert len(freebusy.instance.vfreebusy.freebusy_list) == 1
 
-    assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
-        datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+    if backend.get("name") == "davical":
+        # davical report the full event period instead of caping by the freebusy request
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+    else:
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 3, 0, tzinfo=pytz.utc))
 
     await principal.prune()
 
@@ -502,9 +541,15 @@ async def test_free_busy_utc_4(backend, event1, event2, eventfb_2_nonadjacent):
         datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
         datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
 
-    assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
-        datetime.datetime(2007, 7, 15, 6, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 19, 0, tzinfo=pytz.utc))
+    if backend.get("name") == "davical":
+        # davical report the full event period instead of caping by the freebusy request
+        assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
+            datetime.datetime(2007, 7, 15, 6, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 19, 0, tzinfo=pytz.utc))
+    else:
+        assert freebusy.instance.vfreebusy.freebusy_list[1].value[0] == (
+            datetime.datetime(2007, 7, 15, 6, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 17, 0, tzinfo=pytz.utc))
 
     await principal.prune()
 
@@ -543,11 +588,15 @@ async def test_free_busy_utc_5(backend, event1, event2, eventfb_2_nonadjacent):
     assert isinstance(freebusy, FreeBusy)
     assert freebusy.instance.vfreebusy
     assert len(freebusy.instance.vfreebusy.freebusy_list) == 1
-
-    assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
-        datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
-        datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
-
+    if backend.get("name") == "davical":
+        # davical report the full event period instead of caping by the freebusy request
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
+    else:
+        assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+            datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
+            datetime.datetime(2007, 7, 15, 3, 0, tzinfo=pytz.utc))
     await principal.prune()
 
 

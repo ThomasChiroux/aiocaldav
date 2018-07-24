@@ -282,12 +282,14 @@ class CalendarSet(DAVObject):
          * [Calendar(), ...]
         """
         cals = []
-
-        data = await self.children(cdav.Calendar.tag)
-        for c_url, c_type, c_name in data:
-            cals.append(Calendar(self.client, c_url, parent=self, name=c_name))
-
-        return cals
+        try:
+            data = await self.children(cdav.Calendar.tag)
+            for c_url, c_type, c_name in data:
+                cals.append(Calendar(self.client, c_url, parent=self, name=c_name))
+        except error.NotFoundError:
+            return []
+        else:
+            return cals
 
     async def make_calendar(self, name=None, cal_id=None,
                             supported_calendar_component_set=None):
@@ -425,8 +427,11 @@ class Principal(DAVObject):
         """
         Delete all calendars in this Principal.
         """
-        for cal in await self.calendars():
-            await cal.delete()
+        try:
+            for cal in await self.calendars():
+                await cal.delete()
+        except error.NotFoundError:
+            pass # no calendar found, lets pass
 
 
 class Calendar(DAVObject):
@@ -518,7 +523,7 @@ class Calendar(DAVObject):
          * ical - ical object (text)
         """
         evt = Event(self.client, data=ical, parent=self)
-        return await evt.save()
+        return await evt.save(new=True)
 
     async def add_todo(self, ical):
         """
@@ -528,7 +533,7 @@ class Calendar(DAVObject):
          * ical - ical object (text)
         """
         todo = Todo(self.client, data=ical, parent=self)
-        return await todo.save()
+        return await todo.save(new=True)
 
     async def add_journal(self, ical):
         """
@@ -538,7 +543,7 @@ class Calendar(DAVObject):
          * ical - ical object (text)
         """
         jnl = Journal(self.client, data=ical, parent=self)
-        return await jnl.save()
+        return await jnl.save(new=True)
 
     async def save(self):
         """
@@ -893,7 +898,7 @@ class CalendarObjectResource(DAVObject):
         self.data = vcal.fix(r.raw)
         return self
 
-    async def _create(self, data, id=None, path=None):
+    async def _create(self, data, id=None, path=None, new=False):
         if id is None and path is not None and str(path).endswith('.ics'):
             id = re.search('(/|^)([^/]*).ics', str(path)).group(2)
         elif id is None:
@@ -923,8 +928,12 @@ class CalendarObjectResource(DAVObject):
         if path is None and id is None:
             raise error.PutError("Nothing to do: no content")
         path = self.parent.url.join(path)
-        r = await self.client.put(path, data,
-                                  {"Content-Type": 'text/calendar; charset="utf-8"'})
+        headers = {"Content-Type": 'text/calendar; charset="utf-8"'}
+        if new:
+            headers["If-None-Match"] = "*"
+        else:
+            headers["If-Match"] = "*"
+        r = await self.client.put(path, data, headers)
 
         if r.status == 302:
             path = [x[1] for x in r.headers if x[0] == 'location'][0]
@@ -934,7 +943,7 @@ class CalendarObjectResource(DAVObject):
         self.url = URL.objectify(path)
         self.id = id
 
-    async def save(self):
+    async def save(self, new=False):
         """
         Save the object, can be used for creation and update.
 
@@ -943,7 +952,7 @@ class CalendarObjectResource(DAVObject):
         """
         if self._instance is not None:
             path = self.url.path if self.url else None
-            await self._create(self._instance.serialize(), self.id, path)
+            await self._create(self._instance.serialize(), self.id, path, new=new)
         return self
 
     def __str__(self):

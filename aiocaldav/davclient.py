@@ -164,8 +164,10 @@ class DAVClient:
          * DAVResponse
         """
         return await self.request(url, "REPORT", query,
-                                  {'Depth': str(depth), "Content-Type":
-                                   "application/xml; charset=\"utf-8\""})
+                                  {'Depth': str(depth),
+                                   "Content-Type":
+                                   'application/xml; charset="utf-8"',
+                                   "Accept": "text/calendar"})
 
     async def mkcol(self, url, body, dummy=None):
         """

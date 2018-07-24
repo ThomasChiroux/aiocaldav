@@ -301,7 +301,7 @@ async def test_create_todo_in_event_only_calendar(backend, todo_fixtures):
     if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_todo(todo_fixtures)
     else:
-        with pytest.raises(error.PutError):
+        with pytest.raises(error.AuthorizationError):
             await cal.add_todo(todo_fixtures)
 
     await principal.prune()

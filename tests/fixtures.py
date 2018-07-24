@@ -135,24 +135,55 @@ def xandikos_direct():
     yield backends.get('xandikos2', {})
 
 
-@pytest.fixture(scope="session", params=['radicale', 'davical'])
-# @pytest.fixture(scope="session")
+
+@contextlib.contextmanager
+def cyrus_docker():
+    check_docker()
+    # TODO: use pkg_resource to discover the good path of the docker-compose file.
+    subprocess.run(
+        "docker-compose -f {location}/docker-compose.yml up -d".format(
+            location=backends.get('cyrus', {}).get("location")),
+        shell=True)
+    # TODO: instead of waiting a fixed time, check if caldav server is started with
+    #       a http get loop for example
+    time.sleep(5)  # wait for the container to starts
+    yield backends.get('cyrus', {})
+    subprocess.run(
+        "docker-compose -f {location}/docker-compose.yml down".format(
+            location=backends.get('cyrus', {}).get("location")),
+        shell=True)
+    time.sleep(3)  # wait for the container to stop
+
+
+@contextlib.contextmanager
+def cyrus_direct():
+    # TODO: use pkg_resource to discover the good path of the docker-compose file.
+    yield backends.get('cyrus2', {})
+
+
+
+#@pytest.fixture(scope="session", params=['radicale', 'davical'])
+@pytest.fixture(scope="session")
 def backend(request):
     """Backend actually used."""
     # xandikos is not ready, it last some bug features like RRULE support, so we do
     # not test if for now.
 
-    # with radicale_direct() as backend:
-    #     yield backend
-    if request.param == 'radicale':
-        with radicale_docker() as backend:
-            yield backend
-    elif request.param == 'davical':
-        with davical_docker() as backend:
-            yield backend
-    elif request.param == 'xandikos':
-        with xandikos_docker() as backend:
-            yield backend
+    with cyrus_direct() as backend:
+        yield backend
+
+    # if request.param == 'radicale':
+    #     with radicale_docker() as backend:
+    #         yield backend
+    # elif request.param == 'davical':
+    #     with davical_docker() as backend:
+    #         yield backend
+    # elif request.param == 'xandikos':
+    #     with xandikos_docker() as backend:
+    #         yield backend
+    # elif request.param == 'cyrus':
+    #     with cyrus_docker() as backend:
+    #         yield backend
 
 
 @pytest.fixture(scope="module", params=get_static_files_list('event'))
@@ -163,6 +194,11 @@ def event_fixtures(request):
 @pytest.fixture(scope="module")
 def event1(request):
     return get_one_static_file("event_ok_caldav_1.ics", full_path=False)
+
+
+@pytest.fixture(scope="module")
+def event1bis(request):
+    return get_one_static_file("event_ok_caldav_1bis.ics", full_path=False)
 
 
 @pytest.fixture(scope="module")

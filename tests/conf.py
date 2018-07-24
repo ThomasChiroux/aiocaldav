@@ -56,3 +56,17 @@ backends['xandikos2'] = {"name": "xandikos",
                          "uri": "http://172.17.0.1:5232/",
                          "login": "user1",
                          "password": "", }
+
+backends['cyrus'] = {"name": "cyrus",
+                     "type": "docker",
+                     "location": "tests/backends/cyrus",
+                     "uri": "http://172.17.0.1:5232/dav/principals/user/",
+                     "login": "test",
+                     "password": "test", }
+
+backends['cyrus2'] = {"name": "cyrus",
+                      "type": "direct",
+                      "location": "tests/backends/cyrus",
+                      "uri": "http://172.17.0.1:5232/dav/principals/user/",
+                      "login": "test",
+                      "password": "test", }

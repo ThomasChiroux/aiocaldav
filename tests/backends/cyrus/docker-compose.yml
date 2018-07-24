@@ -1,0 +1,10 @@
+version: '3'
+services:
+  cyrus:
+    container_name: cyrus_tests
+    build:
+      context: ./cyrus
+    image: cyrus_tests:latest
+    ports:
+      - "5232:80"
+      #- "143:143"
