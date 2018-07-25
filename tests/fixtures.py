@@ -4,11 +4,13 @@ import glob
 import os
 import subprocess
 import time
+import uuid
 import urllib.request
 import urllib.error
 
 import pytest
 
+from aiocaldav.davclient import DAVClient
 from .conf import backends
 
 
@@ -184,6 +186,28 @@ def backend(request):
     # elif request.param == 'cyrus':
     #     with cyrus_docker() as backend:
     #         yield backend
+
+
+@pytest.fixture(scope="function")
+async def principal(request, event_loop, backend):
+    """principal async fixture."""
+    uri = backend.get('uri')
+    # instead of a fixed login we generate a random one in order to start with an
+    # empty principal.
+    login = backend.get('login', uuid.uuid4().hex)
+    password = backend.get('password', uuid.uuid4().hex)
+    caldav = DAVClient(uri, username=login,
+                       password=password, ssl_verify_cert=False)
+    principal = await caldav.principal()
+
+    def finalize():
+        async def afin():
+            await principal.prune()
+        event_loop.run_until_complete(afin())
+        
+    request.addfinalizer(finalize)
+
+    return principal
 
 
 @pytest.fixture(scope="module", params=get_static_files_list('event'))

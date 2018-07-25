@@ -11,7 +11,7 @@ from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
 from aiocaldav.objects import (Calendar, Event, FreeBusy)
 
-from .fixtures import (backend, event_fixtures, event1, event2, event3)
+from .fixtures import (backend, principal, event_fixtures, event1, event2, event3)
 
 
 @pytest.fixture(scope="module")
@@ -63,18 +63,10 @@ END:VCALENDAR"""
 
 
 @pytest.mark.asyncio
-async def test_free_busy_naive_1(backend, event2):
+async def test_free_busy_naive_1(backend, principal, event2):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -95,22 +87,12 @@ async def test_free_busy_naive_1(backend, event2):
         datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
         datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_naive_2(backend, event1, event2, eventfb_2_adjacent):
+async def test_free_busy_naive_2(backend, principal, event1, event2, eventfb_2_adjacent):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -146,22 +128,12 @@ async def test_free_busy_naive_2(backend, event1, event2, eventfb_2_adjacent):
             datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
             datetime.datetime(2007, 7, 15, 17, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_naive_3(backend, event1, event2, eventfb_2_adjacent):
+async def test_free_busy_naive_3(backend, principal, event1, event2, eventfb_2_adjacent):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -190,22 +162,12 @@ async def test_free_busy_naive_3(backend, event1, event2, eventfb_2_adjacent):
             datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
             datetime.datetime(2007, 7, 15, 3, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_naive_4(backend, event1, event2, eventfb_2_nonadjacent):
+async def test_free_busy_naive_4(backend, principal, event1, event2, eventfb_2_nonadjacent):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -239,22 +201,12 @@ async def test_free_busy_naive_4(backend, event1, event2, eventfb_2_nonadjacent)
             datetime.datetime(2007, 7, 15, 6, 0, tzinfo=pytz.utc),
             datetime.datetime(2007, 7, 15, 17, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_naive_5(backend, event1, event2, eventfb_2_nonadjacent):
+async def test_free_busy_naive_5(backend, principal, event1, event2, eventfb_2_nonadjacent):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -284,23 +236,13 @@ async def test_free_busy_naive_5(backend, event1, event2, eventfb_2_nonadjacent)
             datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
             datetime.datetime(2007, 7, 15, 3, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_naive_6(backend, event3):
+async def test_free_busy_naive_6(backend, principal, event3):
     """Test free busy of a recurring transparent event."""
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -318,23 +260,13 @@ async def test_free_busy_naive_6(backend, event3):
     assert freebusy.instance.vfreebusy
     assert hasattr(freebusy.instance.vfreebusy, 'freebusy') is False
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_naive_7(backend, event3_opaque):
+async def test_free_busy_naive_7(backend, principal, event3_opaque):
     """Test free busy of a recurring opaque event."""
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -358,22 +290,12 @@ async def test_free_busy_naive_7(backend, event3_opaque):
         datetime.datetime(2007, 11, 2, 0, 0, tzinfo=pytz.utc),
         datetime.datetime(2007, 11, 3, 0, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_utc_1(backend, event2):
+async def test_free_busy_utc_1(backend, principal, event2):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -397,22 +319,12 @@ async def test_free_busy_utc_1(backend, event2):
         datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
         datetime.datetime(2007, 7, 15, 4, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_utc_2(backend, event1, event2, eventfb_2_adjacent):
+async def test_free_busy_utc_2(backend, principal, event1, event2, eventfb_2_adjacent):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -451,22 +363,12 @@ async def test_free_busy_utc_2(backend, event1, event2, eventfb_2_adjacent):
             datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
             datetime.datetime(2007, 7, 15, 17, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_utc_3(backend, event1, event2, eventfb_2_adjacent):
+async def test_free_busy_utc_3(backend, principal, event1, event2, eventfb_2_adjacent):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -499,22 +401,12 @@ async def test_free_busy_utc_3(backend, event1, event2, eventfb_2_adjacent):
             datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
             datetime.datetime(2007, 7, 15, 3, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_utc_4(backend, event1, event2, eventfb_2_nonadjacent):
+async def test_free_busy_utc_4(backend, principal, event1, event2, eventfb_2_nonadjacent):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -551,22 +443,12 @@ async def test_free_busy_utc_4(backend, event1, event2, eventfb_2_nonadjacent):
             datetime.datetime(2007, 7, 15, 6, 0, tzinfo=pytz.utc),
             datetime.datetime(2007, 7, 15, 17, 0, tzinfo=pytz.utc))
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_utc_5(backend, event1, event2, eventfb_2_nonadjacent):
+async def test_free_busy_utc_5(backend, principal, event1, event2, eventfb_2_nonadjacent):
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -597,23 +479,14 @@ async def test_free_busy_utc_5(backend, event1, event2, eventfb_2_nonadjacent):
         assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
             datetime.datetime(2007, 7, 14, 17, 0, tzinfo=pytz.utc),
             datetime.datetime(2007, 7, 15, 3, 0, tzinfo=pytz.utc))
-    await principal.prune()
 
 
 @pytest.mark.asyncio
-async def test_free_busy_utc_6(backend, event3):
+async def test_free_busy_utc_6(backend, principal, event3):
     """Test free busy of a recurring transparent event."""
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -634,23 +507,13 @@ async def test_free_busy_utc_6(backend, event3):
     assert freebusy.instance.vfreebusy
     assert hasattr(freebusy.instance.vfreebusy, 'freebusy') is False
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_free_busy_utc_7(backend, event3_opaque):
+async def test_free_busy_utc_7(backend, principal, event3_opaque):
     """Test free busy of a recurring opaque event."""
     if backend.get("name") == "radicale":
         # radicale does not support freebusy yet
         pytest.skip()
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -676,5 +539,3 @@ async def test_free_busy_utc_7(backend, event3_opaque):
     assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
         datetime.datetime(2007, 11, 2, 0, 0, tzinfo=pytz.utc),
         datetime.datetime(2007, 11, 3, 0, 0, tzinfo=pytz.utc))
-
-    await principal.prune()
