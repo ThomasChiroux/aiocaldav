@@ -13,7 +13,7 @@ from .fixtures import backend, caldav, principal
 @pytest.mark.asyncio
 async def test_principal_default(backend, principal):
     uri = backend.get('uri')
-    login = backend.get('login', uuid.uuid4().hex)
+    login = backend.get('login', '')
     assert principal.url == uri + login + "/"
     assert principal._calendar_home_set is None
 

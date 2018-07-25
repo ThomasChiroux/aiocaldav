@@ -65,7 +65,7 @@ async def test_create_todo_without_completed_1(backend, principal, todo_fixtures
     await cal.add_todo(todo_fixtures)
 
     todos = await cal.todos(include_completed=False)
-
+    print("#############", todos)
     try:
         _ = vtodo.vtodo.completed
     except (AttributeError, KeyError):  # no completed, should be in the list

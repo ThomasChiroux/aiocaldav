@@ -164,28 +164,70 @@ def cyrus_direct():
 
 
 
-#@pytest.fixture(scope="session", params=['radicale', 'davical'])
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", params=['radicale', 'davical', 'xandikos', 'cyrus', ])
 def backend(request):
     """Backend actually used."""
     # xandikos is not ready, it last some bug features like RRULE support, so we do
     # not test if for now.
+    # TODO: handle "direct" backend type with cli options
+    only = False
+    if request.config.getoption('--only-backend-radicale'):
+        only = True
+        if request.param == 'radicale':
+            with radicale_docker() as backend:
+                yield backend
+        else:
+            pytest.skip()
+            
+    if request.config.getoption('--only-backend-davical'):
+        only = True
+        if request.param == 'davical':
+            with davical_docker() as backend:
+                yield backend
+        else:
+            pytest.skip()
+    if request.config.getoption('--only-backend-xandikos'):
+        only = True
+        if request.param == 'xandikos':
+            with xandikos_docker() as backend:
+                yield backend
+        else:
+            pytest.skip()
+    if request.config.getoption('--only-backend-cyrus'):
+        only = True
+        if request.param == 'cyrus':
+            with cyrus_docker() as backend:
+                yield backend
+        else:
+            pytest.skip()
+    
+    if not only:
+        if request.param == 'radicale':
+            if request.config.getoption('--no-backend-radicale'):
+                pytest.skip()
+            else:
+                with radicale_docker() as backend:
+                    yield backend
+        elif request.param == 'davical': 
+            if request.config.getoption('--no-backend-davical'):
+                pytest.skip()
+            else:
+                with davical_docker() as backend:
+                    yield backend
+        elif request.param == 'xandikos':
+            if request.config.getoption('--no-backend-xandikos'):
+                pytest.skip()
+            else:
+                pytest.skip()  # for now, skip xandikos by default. ()
+                # with xandikos_docker() as backend:
+                #     yield backend
+        elif request.param == 'cyrus':
+            if request.config.getoption('--no-backend-cyrus'):
+                pytest.skip()
+            else:
+                with cyrus_docker() as backend:
+                    yield backend
 
-    with cyrus_direct() as backend:
-        yield backend
-
-    # if request.param == 'radicale':
-    #     with radicale_docker() as backend:
-    #         yield backend
-    # elif request.param == 'davical':
-    #     with davical_docker() as backend:
-    #         yield backend
-    # elif request.param == 'xandikos':
-    #     with xandikos_docker() as backend:
-    #         yield backend
-    # elif request.param == 'cyrus':
-    #     with cyrus_docker() as backend:
-    #         yield backend
 
 @pytest.fixture(scope="function")
 async def caldav(request, backend):
@@ -193,8 +235,8 @@ async def caldav(request, backend):
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
+    login = backend.get('login', '')
+    password = backend.get('password', '')
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
     return caldav

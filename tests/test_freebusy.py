@@ -286,7 +286,16 @@ async def test_free_busy_naive_7(backend, principal, event3_opaque):
 
     assert len(freebusy.instance.vfreebusy.freebusy_list) == 1
 
-    assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+    # warning here, the second value can be a timedelta. In this case, we need
+    # to compute it before testing the result
+    if isinstance(freebusy.instance.vfreebusy.freebusy_list[0].value[0][1], 
+                  datetime.timedelta):
+        result = (freebusy.instance.vfreebusy.freebusy_list[0].value[0][0],
+                  freebusy.instance.vfreebusy.freebusy_list[0].value[0][0] + 
+                  freebusy.instance.vfreebusy.freebusy_list[0].value[0][1])
+    else:
+        result = freebusy.instance.vfreebusy.freebusy_list[0].value[0]
+    assert result == (
         datetime.datetime(2007, 11, 2, 0, 0, tzinfo=pytz.utc),
         datetime.datetime(2007, 11, 3, 0, 0, tzinfo=pytz.utc))
 
@@ -536,6 +545,15 @@ async def test_free_busy_utc_7(backend, principal, event3_opaque):
 
     assert len(freebusy.instance.vfreebusy.freebusy_list) == 1
 
-    assert freebusy.instance.vfreebusy.freebusy_list[0].value[0] == (
+    # warning here, the second value can be a timedelta. In this case, we need
+    # to compute it before testing the result
+    if isinstance(freebusy.instance.vfreebusy.freebusy_list[0].value[0][1], 
+                  datetime.timedelta):
+        result = (freebusy.instance.vfreebusy.freebusy_list[0].value[0][0],
+                  freebusy.instance.vfreebusy.freebusy_list[0].value[0][0] + 
+                  freebusy.instance.vfreebusy.freebusy_list[0].value[0][1])
+    else:
+        result = freebusy.instance.vfreebusy.freebusy_list[0].value[0]
+    assert result == (
         datetime.datetime(2007, 11, 2, 0, 0, tzinfo=pytz.utc),
         datetime.datetime(2007, 11, 3, 0, 0, tzinfo=pytz.utc))

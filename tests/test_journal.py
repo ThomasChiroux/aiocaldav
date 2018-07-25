@@ -121,7 +121,8 @@ async def test_delete_journal_1(caldav, principal, journal_fixtures):
 
 
 @pytest.mark.asyncio
-async def test_create_journal_in_event_only_calendar(caldav, principal, journal_fixtures):
+async def test_create_journal_in_event_only_calendar(backend, caldav, 
+                                                     principal, journal_fixtures):
     """This test does not pass with radicale backend: perhaps radicale accepts
     journal even when the calendar should not support it ?"""
     cal_id = uuid.uuid4().hex
@@ -130,5 +131,5 @@ async def test_create_journal_in_event_only_calendar(caldav, principal, journal_
     if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_journal(journal_fixtures)
     else:
-        with pytest.raises(error.PutError):
+        with pytest.raises(error.AuthorizationError):
             await cal.add_journal(journal_fixtures)

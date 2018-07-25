@@ -652,33 +652,60 @@ class Calendar(DAVObject):
             sort_keys = (sort_key,)
 
         if not include_completed:
-            vnotcompleted = cdav.TextMatch('COMPLETED', negate=True)
+            # == QUERY 1 
+            # vnotcompleted = cdav.TextMatch('COMPLETED', negate=True)
             vnotcancelled = cdav.TextMatch('CANCELLED', negate=True)
-            vstatusNotCompleted = cdav.PropFilter(
-                'STATUS') + vnotcompleted
+            # vstatusNotCompleted = cdav.PropFilter(
+            #     'STATUS') + vnotcompleted
             vstatusNotCancelled = cdav.PropFilter(
                 'STATUS') + vnotcancelled
-            vnostatus = cdav.PropFilter('STATUS') + cdav.NotDefined()
+            
             vnocompletedate = cdav.PropFilter('COMPLETED') + cdav.NotDefined()
             # vnocanceldate = cdav.PropFilter('CANCELLED') + cdav.NotDefined()
             vtodo = (cdav.CompFilter("VTODO") +
                      vnocompletedate + vstatusNotCancelled)
             # vtodo2 = (cdav.CompFilter("VTODO") + vnostatus)
-            vcalendar = cdav.CompFilter("VCALENDAR") + vtodo
+            vcalendar = cdav.CompFilter("VCALENDAR") + vtodo  # + vtodo2
+            filter1 = cdav.Filter() + vcalendar
+            root = cdav.CalendarQuery() + [prop, filter1]
+
+            response = await self._query(root, 1, 'report')
+            results = self._handle_prop_response(
+                response=response, props=[cdav.CalendarData()])
+            for r in results:
+                matches.append(
+                    Todo(self.client, url=self.url.join(r),
+                         data=results[r][cdav.CalendarData.tag], parent=self))
+
+            # ==  QUERY 2 == Add all TODO without status
+            vnostatus = cdav.PropFilter('STATUS') + cdav.NotDefined()
+            vtodo2 = (cdav.CompFilter("VTODO") + vnocompletedate + vnostatus)
+            vcalendar2 = cdav.CompFilter("VCALENDAR") + vtodo2
+            filter2 = cdav.Filter() + vcalendar2
+            root2 = cdav.CalendarQuery() + [prop, filter2]
+
+            response2 = await self._query(root2, 1, 'report')
+            results2 = self._handle_prop_response(
+                response=response2, props=[cdav.CalendarData()])
+            for r in results2:
+                matches.append(
+                    Todo(self.client, url=self.url.join(r),
+                         data=results2[r][cdav.CalendarData.tag], parent=self))
         else:
             vtodo = cdav.CompFilter("VTODO")
             vcalendar = cdav.CompFilter("VCALENDAR") + vtodo
-        filter = cdav.Filter() + vcalendar
+            filter = cdav.Filter() + vcalendar
 
-        root = cdav.CalendarQuery() + [prop, filter]
+            root = cdav.CalendarQuery() + [prop, filter]
 
-        response = await self._query(root, 1, 'report')
-        results = self._handle_prop_response(
-            response=response, props=[cdav.CalendarData()])
-        for r in results:
-            matches.append(
-                Todo(self.client, url=self.url.join(r),
-                     data=results[r][cdav.CalendarData.tag], parent=self))
+            response = await self._query(root, 1, 'report')
+            results = self._handle_prop_response(
+                response=response, props=[cdav.CalendarData()])
+            for r in results:
+                matches.append(
+                    Todo(self.client, url=self.url.join(r),
+                         data=results[r][cdav.CalendarData.tag], parent=self))
+
 
         def sort_key_func(x):
             ret = []
