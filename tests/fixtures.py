@@ -187,10 +187,9 @@ def backend(request):
     #     with cyrus_docker() as backend:
     #         yield backend
 
-
 @pytest.fixture(scope="function")
-async def principal(request, event_loop, backend):
-    """principal async fixture."""
+async def caldav(request, backend):
+    """caldav fixture."""
     uri = backend.get('uri')
     # instead of a fixed login we generate a random one in order to start with an
     # empty principal.
@@ -198,6 +197,12 @@ async def principal(request, event_loop, backend):
     password = backend.get('password', uuid.uuid4().hex)
     caldav = DAVClient(uri, username=login,
                        password=password, ssl_verify_cert=False)
+    return caldav
+
+
+@pytest.fixture(scope="function")
+async def principal(request, event_loop, caldav):
+    """principal async fixture."""
     principal = await caldav.principal()
 
     def finalize():

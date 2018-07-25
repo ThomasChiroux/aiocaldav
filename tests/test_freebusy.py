@@ -11,7 +11,7 @@ from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
 from aiocaldav.objects import (Calendar, Event, FreeBusy)
 
-from .fixtures import (backend, principal, event_fixtures, event1, event2, event3)
+from .fixtures import (backend, caldav, principal, event_fixtures, event1, event2, event3)
 
 
 @pytest.fixture(scope="module")

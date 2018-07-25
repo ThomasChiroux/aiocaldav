@@ -8,20 +8,11 @@ from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
 from aiocaldav.objects import Calendar
 
-from .fixtures import (backend, todo_fixtures)
+from .fixtures import (backend, caldav, principal, todo_fixtures)
 
 
 @pytest.mark.asyncio
-async def test_create_todo_with_completed_1(backend, todo_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_create_todo_with_completed_1(backend, principal, todo_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
@@ -35,20 +26,9 @@ async def test_create_todo_with_completed_1(backend, todo_fixtures):
     journals = await cal.journals()
     assert len(journals) == 0
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_todo_with_completed_2(backend, todo_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_create_todo_with_completed_2(backend, principal, todo_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
@@ -63,11 +43,9 @@ async def test_create_todo_with_completed_2(backend, todo_fixtures):
     journals = await cal.journals()
     assert len(journals) == 0
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_todo_without_completed_1(backend, todo_fixtures):
+async def test_create_todo_without_completed_1(backend, principal, todo_fixtures):
     vtodo = vobject.readOne(todo_fixtures)
     try:
         _ = vtodo.vtodo.status
@@ -81,15 +59,6 @@ async def test_create_todo_without_completed_1(backend, todo_fixtures):
     except AttributeError:
         pass
 
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
@@ -109,26 +78,15 @@ async def test_create_todo_without_completed_1(backend, todo_fixtures):
     journals = await cal.journals()
     assert len(journals) == 0
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_todo_without_completed_2(backend, todo_fixtures):
+async def test_create_todo_without_completed_2(backend, principal, todo_fixtures):
     vtodo = vobject.readOne(todo_fixtures)
     try:
         _ = vtodo.vtodo.status
     except AttributeError:  # no status
         if backend.get("name") == "radicale":
             pytest.skip()
-
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
@@ -149,20 +107,9 @@ async def test_create_todo_without_completed_2(backend, todo_fixtures):
     journals = await cal.journals()
     assert len(journals) == 0
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_delete_calendar_with_todo(backend, todo_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_create_delete_calendar_with_todo(backend, caldav, principal, todo_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
@@ -179,20 +126,9 @@ async def test_create_delete_calendar_with_todo(backend, todo_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal2.todos()
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_todo_from_vobject_1(backend, todo_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_create_todo_from_vobject_1(backend, principal, todo_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
@@ -208,26 +144,15 @@ async def test_create_todo_from_vobject_1(backend, todo_fixtures):
     journals = await cal.journals()
     assert len(journals) == 0
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_todo_from_vobject_2(backend, todo_fixtures):
+async def test_create_todo_from_vobject_2(backend, principal, todo_fixtures):
     vtodo = vobject.readOne(todo_fixtures)
     try:
         _ = vtodo.vtodo.status
     except AttributeError:  # no status
         if backend.get("name") == "radicale":
             pytest.skip()
-
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
 
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
@@ -249,20 +174,9 @@ async def test_create_todo_from_vobject_2(backend, todo_fixtures):
     journals = await cal.journals()
     assert len(journals) == 0
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_todo_mark_completed_1(backend, todo_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_create_todo_mark_completed_1(principal, todo_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
@@ -279,29 +193,17 @@ async def test_create_todo_mark_completed_1(backend, todo_fixtures):
     todos3 = await cal.todos(include_completed=False)
     assert len(todos3) == 0
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_todo_in_event_only_calendar(backend, todo_fixtures):
+async def test_create_todo_in_event_only_calendar(backend, principal, todo_fixtures):
     """This test does not pass with radicale backend: perhaps radicale accepts
     journal even when the calendar should not support it ?"""
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
+
     if backend.get("name") in ["radicale", "davical", "xandikos"]:
         await cal.add_todo(todo_fixtures)
     else:
         with pytest.raises(error.AuthorizationError):
             await cal.add_todo(todo_fixtures)
-
-    await principal.prune()

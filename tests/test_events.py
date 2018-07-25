@@ -10,20 +10,11 @@ from aiocaldav.davclient import DAVClient
 from aiocaldav.lib import error
 from aiocaldav.objects import (Calendar, Event, FreeBusy)
 
-from .fixtures import (backend, event_fixtures, event1, event1bis, event2, event3)
+from .fixtures import (backend, caldav, principal, event_fixtures, event1, event1bis, event2, event3)
 
 
 @pytest.mark.asyncio
-async def test_create_event_1(backend, event_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_create_event_1(backend, caldav, principal, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -42,21 +33,10 @@ async def test_create_event_1(backend, event_fixtures):
     assert len(events2) == 1
     assert events2[0].url == events[0].url
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_event_2(backend, event_fixtures):
+async def test_create_event_2(backend, caldav, principal, event_fixtures):
     """test with a VEVENT only calendar."""
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
@@ -76,21 +56,10 @@ async def test_create_event_2(backend, event_fixtures):
     assert len(events2) == 1
     assert events2[0].url == events[0].url
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_2events(backend, event1, event2):
+async def test_create_2events(backend, caldav, principal, event1, event2):
     """test with a VEVENT only calendar."""
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VEVENT'])
@@ -112,20 +81,9 @@ async def test_create_2events(backend, event1, event2):
     assert events2[0].url == events[0].url
     assert events2[1].url == events[1].url
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_delete_calendar_with_event(backend, event_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_create_delete_calendar_with_event(backend, caldav, principal, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -145,20 +103,9 @@ async def test_create_delete_calendar_with_event(backend, event_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal2.events()
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_event_from_vobject(backend, event_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_create_event_from_vobject(backend, caldav, principal, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
@@ -176,20 +123,9 @@ async def test_create_event_from_vobject(backend, event_fixtures):
     assert len(events2) == 1
     assert events2[0].url == events[0].url
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_lookup_event_1(backend, event_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_lookup_event_1(backend, caldav, principal, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -212,20 +148,9 @@ async def test_lookup_event_1(backend, event_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal.event_by_uid("0")
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_delete_event_1(backend, event_fixtures):
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
+async def test_delete_event_1(backend, principal, event_fixtures):
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -243,22 +168,11 @@ async def test_delete_event_1(backend, event_fixtures):
     with pytest.raises(error.NotFoundError):
         await cal.event_by_uid(ev1.instance.vevent.uid.valueRepr())
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_event_in_journal_only_calendar(backend, event_fixtures):
+async def test_create_event_in_journal_only_calendar(backend, principal, event_fixtures):
     """This test does not pass with radicale backend: perhaps radicale accepts
     events even when the calendar should not support it ?"""
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VJOURNAL'])
@@ -268,22 +182,11 @@ async def test_create_event_in_journal_only_calendar(backend, event_fixtures):
         with pytest.raises(error.AuthorizationError):
             await cal.add_event(event_fixtures)
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_create_event_in_todo_only_calendar(backend, event_fixtures):
+async def test_create_event_in_todo_only_calendar(backend, principal, event_fixtures):
     """This test does not pass with radicale backend: perhaps radicale accepts
     events even when the calendar should not support it ?"""
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id,
                                         supported_calendar_component_set=['VTODO'])
@@ -293,21 +196,10 @@ async def test_create_event_in_todo_only_calendar(backend, event_fixtures):
         with pytest.raises(error.AuthorizationError):
             await cal.add_event(event_fixtures)
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_date_search_naive_1(backend, event1, event1bis):
+async def test_date_search_naive_1(backend, principal, event1, event1bis):
     """Test naive date search."""
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -338,21 +230,10 @@ async def test_date_search_naive_1(backend, event1, event1bis):
     result4 = await cal.date_search(datetime.datetime(2007, 7, 13, 17, 00, 00))
     assert len(result4) == 1
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_date_search_tzaware_gmt_1(backend, event1, event1bis):
+async def test_date_search_tzaware_gmt_1(backend, principal, event1, event1bis):
     """Test naive date search."""
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -391,21 +272,10 @@ async def test_date_search_tzaware_gmt_1(backend, event1, event1bis):
                                                       tzinfo=datetime.timezone.utc))
     assert len(result4) == 1
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_date_search_tzaware_2(backend, event1):
+async def test_date_search_tzaware_2(backend, principal, event1):
     """Test naive date search."""
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -442,26 +312,14 @@ async def test_date_search_tzaware_2(backend, event1):
     assert len(result) == 1
     # assert evt1.instance.vevent.uid == result[0].instance.vevent.uid
 
-    await principal.prune()
-
 
 @pytest.mark.asyncio
-async def test_recurring_date_search(backend, event3):
+async def test_recurring_date_search(backend, principal, event3):
     """
     This is more sanity testing of the server side than testing of the
     library per se.  How will it behave if we serve it a recurring
     event?
     """
-
-    uri = backend.get('uri')
-    # instead of a fixed login we generate a random one in order to start with an
-    # empty principal.
-    login = backend.get('login', uuid.uuid4().hex)
-    password = backend.get('password', uuid.uuid4().hex)
-    caldav = DAVClient(uri, username=login,
-                       password=password, ssl_verify_cert=False)
-    principal = await caldav.principal()
-
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
