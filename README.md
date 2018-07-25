@@ -37,7 +37,7 @@ to launch the tests.
 It will build the necessary docker images.
 At the first launch, it could take a lot of time to build the images (especially for the cyrus image which need compilation)
 
-# to test against a specific backend, you can use pytest cli options:
+### to test against a specific backend, you can use pytest cli options:
 
 ```
 $ pytest --only-backend-radicale .
@@ -58,12 +58,12 @@ $ pytest --only-backend-xandikos .
 $ pytest --only-backend-cyrus .
 ```
 
-# to exclude a backend, you can use this pytest cli options:
+### to exclude a backend, you can use this pytest cli options:
 
---no-backend-radicale
---no-backend-davical
---no-backend-xandikos
---no-backend-cyrus
+* --no-backend-radicale
+* --no-backend-davical
+* --no-backend-xandikos
+* --no-backend-cyrus
 
 (note: xandikos is not included in the default test suite for now)
 
