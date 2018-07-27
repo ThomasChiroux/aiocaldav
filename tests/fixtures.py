@@ -171,36 +171,65 @@ def backend(request):
     # not test if for now.
     # TODO: handle "direct" backend type with cli options
     only = False
-    if request.config.getoption('--only-backend-radicale'):
+    if request.config.getoption('--only-direct-backend-radicale'):
         only = True
         if request.param == 'radicale':
-            with radicale_docker() as backend:
+            with radicale_direct() as backend:
                 yield backend
         else:
             pytest.skip()
-            
-    if request.config.getoption('--only-backend-davical'):
+    elif request.config.getoption('--only-direct-backend-davical'):
         only = True
         if request.param == 'davical':
-            with davical_docker() as backend:
+            with davical_direct() as backend:
                 yield backend
         else:
             pytest.skip()
-    if request.config.getoption('--only-backend-xandikos'):
+    elif request.config.getoption('--only-direct-backend-xandikos'):
         only = True
         if request.param == 'xandikos':
-            with xandikos_docker() as backend:
+            with xandikos_direct() as backend:
                 yield backend
         else:
             pytest.skip()
-    if request.config.getoption('--only-backend-cyrus'):
+    elif request.config.getoption('--only-direct-backend-cyrus'):
         only = True
         if request.param == 'cyrus':
-            with cyrus_docker() as backend:
+            with cyrus_direct() as backend:
                 yield backend
         else:
             pytest.skip()
     
+    if not only:
+        if request.config.getoption('--only-backend-radicale'):
+            only = True
+            if request.param == 'radicale':
+                with radicale_docker() as backend:
+                    yield backend
+            else:
+                pytest.skip()        
+        elif request.config.getoption('--only-backend-davical'):
+            only = True
+            if request.param == 'davical':
+                with davical_docker() as backend:
+                    yield backend
+            else:
+                pytest.skip()
+        elif request.config.getoption('--only-backend-xandikos'):
+            only = True
+            if request.param == 'xandikos':
+                with xandikos_docker() as backend:
+                    yield backend
+            else:
+                pytest.skip()
+        elif request.config.getoption('--only-backend-cyrus'):
+            only = True
+            if request.param == 'cyrus':
+                with cyrus_docker() as backend:
+                    yield backend
+            else:
+                pytest.skip()
+        
     if not only:
         if request.param == 'radicale':
             if request.config.getoption('--no-backend-radicale'):
@@ -291,3 +320,29 @@ def journal_fixtures(request):
 @pytest.fixture(scope="module", params=get_static_files_list('todo'))
 def todo_fixtures(request):
     return get_one_static_file(request.param)
+
+
+@pytest.fixture(scope="module", params=get_static_files_list('availability'))
+def availability_fixtures(request):
+    return get_one_static_file(request.param)
+
+
+@pytest.fixture(scope="module")
+def avail1(request):
+    return get_one_static_file("availability_ok_rfc_1.ics", full_path=False)
+
+
+@pytest.fixture(scope="module")
+def avail2(request):
+    return get_one_static_file("availability_ok_rfc_2.ics", full_path=False)
+
+
+@pytest.fixture(scope="module")
+def avail3(request):
+    return get_one_static_file("availability_ok_rfc_3.ics", full_path=False)
+
+
+@pytest.fixture(scope="module")
+def avail3bis(request):
+    """Recurring event."""
+    return get_one_static_file("availability_ok_rfc_3bis.ics", full_path=False)

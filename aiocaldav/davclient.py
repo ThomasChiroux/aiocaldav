@@ -45,6 +45,9 @@ class DAVResponse:
         log.debug("response headers: " + str(self.headers))
         log.debug("response status: " + str(self.status))
         log.debug("raw response: " + str(self.raw))
+        print("response headers: " + str(self.headers))
+        print("response status: " + str(self.status))
+        print("raw response: " + str(self.raw))
 
         try:
             self.tree = etree.XML(self.raw)
@@ -265,7 +268,7 @@ class DAVClient:
                 auth=auth, ssl=self.ssl_verify_cert)
             response = DAVResponse()
             await response.load(r)
-
+       
         # this is an error condition the application wants to know
         if response.status in (401, 403):  # forbidden or unauthorized
             ex = error.AuthorizationError()

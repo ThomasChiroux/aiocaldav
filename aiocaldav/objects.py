@@ -130,7 +130,7 @@ class DAVObject:
         # Background: Collection URLs ends with a slash,
         # non-collection URLs does not end with a slash.  If the
         # slash is missing, Servers MAY pretend it's present (RFC
-        # 4918, section 5.2, collection resources), hence only some
+        # 4918, section 5.2, cprint(ollection resources), hence only some
         # few servers break when the slash is missing.  RFC 4918
         # specifies that collection URLs end with a slash while
         # non-collection URLs should not end with a slash.
@@ -211,8 +211,8 @@ class DAVObject:
             path = path[:-1]
         else:
             exchange_path = path + '/'
-        print(properties)
-        print(path)
+        # print(properties)
+        # print(path)
         if path in properties:
             rc = properties[path]
         elif exchange_path in properties:
@@ -545,6 +545,16 @@ class Calendar(DAVObject):
         jnl = Journal(self.client, data=ical, parent=self)
         return await jnl.save(new=True)
 
+    async def add_availability(self, ical):
+        """
+        Add a new availability to the calendar, with the given ical.
+
+        Parameters:
+         * ical - ical objet (text)
+        """
+        avail = Availability(self.client, data=ical, parent=self)
+        return await avail.save(new=True)
+        
     async def save(self):
         """
         The save method for a calendar is only used to create it, for now.
@@ -706,7 +716,6 @@ class Calendar(DAVObject):
                     Todo(self.client, url=self.url.join(r),
                          data=results[r][cdav.CalendarData.tag], parent=self))
 
-
         def sort_key_func(x):
             ret = []
             vtodo = x.instance.vtodo
@@ -750,6 +759,8 @@ class Calendar(DAVObject):
                 return Journal
             if line == 'BEGIN:VFREEBUSY':
                 return FreeBusy
+            if line == 'BEGIN:VAVAILABILITY':
+                return Availability
 
     async def event_by_url(self, href, data=None):
         """
@@ -771,6 +782,13 @@ class Calendar(DAVObject):
         """
         todo = Todo(url=href, data=data, parent=self)
         return await todo.load()
+
+    async def availability_by_url(self, href, data=None):
+        """
+        Returns the availability with the given URL
+        """
+        avail = Availability(url=href, data=data, parent=self)
+        return await avail.load()
 
     async def object_by_uid(self, uid, comp_filter=None):
         """
@@ -830,6 +848,10 @@ class Calendar(DAVObject):
     # alias for backward compatibility
     event = event_by_uid
 
+    async def availability_by_uid(self, uid):
+        return await self.object_by_uid(uid, 
+                                        comp_filter=cdav.CompFilter("VAVAILABILITY"))
+
     async def events(self):
         """
         List all events from the calendar.
@@ -885,6 +907,36 @@ class Calendar(DAVObject):
 
         return all
 
+    async def availabilities(self):
+        """
+        List all availabilities from the calendar.
+
+        Returns:
+         * [Availability(), ...]
+        """
+        # TODO: this is basically a copy of events() - can we do more
+        # refactoring and consolidation here?  Maybe it's wrong to do
+        # separate methods for journals, todos and events?
+        all = []
+
+        data = cdav.CalendarData()
+        prop = dav.Prop() + data
+        vevent = cdav.CompFilter("VAVAILABILITY")
+        vcalendar = cdav.CompFilter("VCALENDAR") + vevent
+        filter = cdav.Filter() + vcalendar
+        root = cdav.CalendarQuery() + [prop, filter]
+
+        response = await self._query(root, 1, query_method='report')
+        results = self._handle_prop_response(
+            response, props=[cdav.CalendarData()])
+        for r in results:
+            all.append(Availability(
+                self.client, url=self.url.join(r),
+                data=results[r][cdav.CalendarData.tag], parent=self))
+
+        return all
+
+
 
 class CalendarObjectResource(DAVObject):
     """
@@ -929,7 +981,8 @@ class CalendarObjectResource(DAVObject):
         if id is None and path is not None and str(path).endswith('.ics'):
             id = re.search('(/|^)([^/]*).ics', str(path)).group(2)
         elif id is None:
-            for obj_type in ('vevent', 'vtodo', 'vjournal', 'vfreebusy'):
+            for obj_type in ('vevent', 'vtodo', 'vjournal', 
+                             'vfreebusy', 'vavailability'):
                 obj = None
                 if hasattr(self.instance, obj_type):
                     obj = getattr(self.instance, obj_type)
@@ -939,7 +992,8 @@ class CalendarObjectResource(DAVObject):
                     id = obj.uid.value
                     break
         else:
-            for obj_type in ('vevent', 'vtodo', 'vjournal', 'vfreebusy'):
+            for obj_type in ('vevent', 'vtodo', 'vjournal',
+                             'vfreebusy', 'vavailability'):
                 obj = None
                 if hasattr(self.instance, obj_type):
                     obj = getattr(self.instance, obj_type)
@@ -1030,6 +1084,23 @@ class Event(CalendarObjectResource):
 class Journal(CalendarObjectResource):
     """
     The `Journal` object is used to represent a journal entry (VJOURNAL).
+    """
+    async def load(self):
+        """
+        Load the object from the caldav server.
+        """
+        r = await self.client.request(self.url, headers={"Accept": "text/calendar"})
+        if r.status >= 400 and r.status < 500:
+            raise error.NotFoundError(errmsg(r))
+        elif r.status >= 500:
+            raise error.ServerError(errmsg(r))
+        self.data = vcal.fix(r.raw)
+        return self
+
+
+class Availability(CalendarObjectResource):
+    """
+    The `Availability` object is used to represent an availability (VAVAILABILITY).
     """
     async def load(self):
         """
