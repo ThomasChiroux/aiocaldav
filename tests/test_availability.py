@@ -9,7 +9,7 @@ from aiocaldav.lib import error
 from aiocaldav.objects import Calendar, Availability
 
 from .fixtures import (backend, caldav, principal, availability_fixtures,
-                       avail1, avail2)
+                       avail1, avail2, avail4fb)
 
 
 @pytest.mark.asyncio
@@ -86,6 +86,9 @@ async def test_create_2_availability(backend, principal,
 @pytest.mark.asyncio
 async def test_create_delete_calendar_with_avail(backend, caldav, principal, 
                                                  availability_fixtures):
+    if backend.get("name") not in ["cyrus", ]:
+        # only cyrus support vailability for now
+        pytest.skip()
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -108,6 +111,9 @@ async def test_create_delete_calendar_with_avail(backend, caldav, principal,
 @pytest.mark.asyncio
 async def test_create_avail_from_vobject(backend, caldav, principal, 
                                          availability_fixtures):
+    if backend.get("name") not in ["cyrus", ]:
+        # only cyrus support vailability for now
+        pytest.skip()
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
 
@@ -127,6 +133,9 @@ async def test_create_avail_from_vobject(backend, caldav, principal,
 
 @pytest.mark.asyncio
 async def test_lookup_avail_1(backend, caldav, principal, availability_fixtures):
+    if backend.get("name") not in ["cyrus", ]:
+        # only cyrus support vailability for now
+        pytest.skip()
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())
@@ -152,6 +161,9 @@ async def test_lookup_avail_1(backend, caldav, principal, availability_fixtures)
 
 @pytest.mark.asyncio
 async def test_delete_availability_1(backend, principal, availability_fixtures):
+    if backend.get("name") not in ["cyrus", ]:
+        # only cyrus support vailability for now
+        pytest.skip()
     cal_id = uuid.uuid4().hex
     cal = await principal.make_calendar(name="Yep", cal_id=cal_id)
     assert cal_id in str(cal.url.canonical())

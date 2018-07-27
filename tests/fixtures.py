@@ -312,6 +312,12 @@ def event3(request):
     return get_one_static_file("event_ok_caldav_3.ics", full_path=False)
 
 
+@pytest.fixture(scope="module")
+def event4avail(request):
+    """utc event for availability test."""
+    return get_one_static_file("event_ok_utc_1.ics", full_path=False)
+
+
 @pytest.fixture(scope="module", params=get_static_files_list('journal'))
 def journal_fixtures(request):
     return get_one_static_file(request.param)
@@ -338,11 +344,12 @@ def avail2(request):
 
 
 @pytest.fixture(scope="module")
-def avail3(request):
-    return get_one_static_file("availability_ok_rfc_3.ics", full_path=False)
+def avail4fb(request):
+    """Availability for freebusy test."""
+    return get_one_static_file("availability_ok_utc_1.ics", full_path=False)
 
 
 @pytest.fixture(scope="module")
-def avail3bis(request):
-    """Recurring event."""
-    return get_one_static_file("availability_ok_rfc_3bis.ics", full_path=False)
+def avail4fb2_prio5(request):
+    """Availability for freebusy test - period of busy time for vacations."""
+    return get_one_static_file("availability_ok_utc_2_prio5.ics", full_path=False)
